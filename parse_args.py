@@ -2,40 +2,13 @@
 import os
 import argparse
 from pathlib import Path
+import json
+import logging
+
+import utils
 
 
-ROOT_PATH = Path(__file__).absolute()
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='xgboost GBT benchmark')
-
-    parser.add_argument('--configs', metavar='ConfigPath', type=str,
-                        default='configs/config_example.json',
-                        help='The path to a configuration file or '
-                             'a directory that contains configuration files')
-    parser.add_argument('--device', '--devices', default='host cpu gpu none', type=str, nargs='+',
-                        choices=('host', 'cpu', 'gpu', 'none'),
-                        help='Availible execution context devices. '
-                        'This parameter only marks devices as available, '
-                        'make sure to add the device to the config file '
-                        'to run it on a specific device')
-
-    parser.add_argument(
-        "--dataset",
-        default="all",
-        type=str,
-        help="The dataset to be used for benchmarking. 'all' for all datasets: "
-        "fraud, epsilon, year, covtype, higgs, airline",
-    )
-    parser.add_argument(
-        "--datadir", default=os.path.join(ROOT_PATH, "data"), type=str, help="The root datasets folder"
-    )
-
-    parser.add_argument('--seed', type=int, default=0,
-                        help='Seed to pass as random_state')
-
-def parse_args_train(parser):
+def update_parser_train(parser):
 
     parser.add_argument('--learning-rate', '--eta', type=float, default=0.3,
                         help='Step size shrinkage used in update '
@@ -58,7 +31,7 @@ def parse_args_train(parser):
                         help='L2 regularization term on weights')
     parser.add_argument('--reg-alpha', type=float, default=0,
                         help='L1 regularization term on weights')
-    parser.add_argument('--tree-method', type=str, required=True,
+    parser.add_argument('--tree-method', type=str,
                         help='The tree construction algorithm used in XGBoost')
     parser.add_argument('--scale-pos-weight', type=float, default=1,
                         help='Controls a balance of positive and negative weights')
@@ -69,16 +42,27 @@ def parse_args_train(parser):
     parser.add_argument('--max-bin', type=int, default=256,
                         help='Maximum number of discrete bins to '
                             'bucket continuous features')
-    parser.add_argument('--objective', type=str, required=True,
+    parser.add_argument('--objective', type=str,
                         choices=('reg:squarederror', 'binary:logistic',
                                 'multi:softmax', 'multi:softprob'),
                         help='Specifies the learning task')
 
 
 
+def update_args_json(args, logging):
+    
+    config_path = args.configs
 
+    logging.info(f'Config: {config_path}')
+    with open(config_path, 'r') as config_file:
+        config = json.load(config_file)
 
-
+    common_params = config['common']
+    for params_set in config['cases']:
+        params = common_params.copy()
+        params.update(params_set.copy())
+        # update arg dict
+        vars(args).update(params)
 
 
 
