@@ -48,6 +48,18 @@ def update_parser_train(parser):
                         help='Specifies the learning task')
 
 
+    parser.add_argument(
+        "-nrows",
+        default=None,
+        type=int,
+        help=(
+            "Subset of rows in the datasets to use. Useful for test running "
+            "benchmarks on small amounts of data. WARNING: Some datasets will "
+            "give incorrect accuracy results if nrows is specified as they have "
+            "predefined train/test splits."
+        ),
+    )
+
 
 def update_args_json(args, logging):
     
