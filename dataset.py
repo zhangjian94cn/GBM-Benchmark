@@ -35,6 +35,15 @@ class Data:
         self.qid_test = qid_test
 
 
+def prepare_dataset(dataset_folder, dataset, nrows):
+    dataset_folder = os.path.join(dataset_folder, dataset)
+    if not os.path.exists(dataset_folder):
+        os.makedirs(dataset_folder)
+    prepare_function = globals()["prepare_" + dataset]
+    return prepare_function(dataset_folder, nrows)
+
+
+
 def prepare_fraud(dataset_folder, nrows):
     if not os.path.exists(dataset_folder):
         os.makedirs(dataset_folder)
@@ -79,3 +88,20 @@ def prepare_higgs(dataset_folder, nrows):
     )
     pickle.dump(data, open(pickle_url, "wb"), protocol=4)
     return data
+
+
+
+def get_data(data, size=-1):
+    np_data = data.to_numpy() if not isinstance(data, np.ndarray) else data
+
+    if size != -1:
+        msg = "Requested size bigger than the data size (%d vs %d)" % (size, np_data.shape[0])
+        assert size <= np_data.shape[0], msg
+        np_data = np_data[0:size]
+
+    return np_data
+
+
+
+
+
