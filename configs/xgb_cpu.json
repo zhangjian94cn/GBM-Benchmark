@@ -6,24 +6,12 @@
         "dtype": "float32",
         "algorithm": "gbt_pred",
         "tree-method": "hist",
-        "count-dmatrix": ""
+        "count-dmatrix": "",
+        "datadir": "GBM-Benchmark/data"
     },
     "cases": [
         {
-            "dataset": [
-                {
-                    "source": "npy",
-                    "name": "higgs1m",
-                    "training": {
-                        "x": "data/higgs1m_x_train.npy",
-                        "y": "data/higgs1m_y_train.npy"
-                    },
-                    "testing": {
-                        "x": "data/higgs1m_x_test.npy",
-                        "y": "data/higgs1m_y_test.npy"
-                    }
-                }
-            ],
+            "dataset": "higgs",
             "reg-alpha": 0.9,
             "max-bin": 256,
             "scale-pos-weight": 2,
