@@ -10,7 +10,11 @@ import numpy as np
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
 
+import sklearn.metrics as sklm
+
 from parse_args import update_parser_train, update_args_json
+from dataset import prepare_dataset, get_data
+from timer import Timer
 
 
 ROOT_PATH = Path(__file__).absolute()
@@ -45,11 +49,15 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=0,
                         help='Seed to pass as random_state')
 
+    parser.add_argument('--verbose', default='INFO', type=str,
+                        choices=("ERROR", "WARNING", "INFO", "DEBUG"))
     return parser
 
 
-def train(args, X_train, y_train):
+def train(args, data):
 
+    X_train, y_train = data.X_train, data.y_train
+    
     model = XGBClassifier(
         learning_rate=args.learning_rate,
         gamma=args.min_split_loss,
@@ -72,17 +80,59 @@ def train(args, X_train, y_train):
         seed=args.seed,
     )
 
-    return model.fit(X_train, y_train)
+    with Timer() as t_train:
+        model = model.fit(X_train, y_train)
+
+    return model, t_train
 
 
-def predict():
+def predict(model, data):
 
-    pass
+    X_test, y_test = data.X_test, data.y_test
+
+    with Timer() as t_pred:
+        prob_prediction = model.predict(X_test)
+
+    pred_res = classification_metrics(y_test, prob_prediction)
+
+    return pred_res, t_pred
 
 
-def benchmark():
+def benchmark(args):
+    
+    data = prepare_dataset(args.datadir, args.dataset, args.nrows)
 
-    pass
+    booster, t_train = train(args, data)
+    booster.save_model(f'xgb-{args.dataset}-model.json')
+
+    pred_res, t_pred = predict(booster, data)
+
+    print(f'xgb train time is : {t_train.interval}')
+    print(f'xgb pred time is : {t_pred.interval}')
+
+    print(pred_res)
+
+
+def classification_metrics(y_true, y_prob, threshold=0.5):
+
+    def evaluate_metrics(y_true, y_pred, metrics):
+        res = {}
+        for metric_name, metric in metrics.items():
+            res[metric_name] = metric(y_true, y_pred)
+        return res
+
+    y_true = y_true.to_numpy()
+
+    y_pred = np.where(y_prob > threshold, 1, 0)
+    metrics = {
+        "Accuracy": sklm.accuracy_score,
+        "Log_Loss": lambda real, pred: sklm.log_loss(real, y_prob, eps=1e-5),
+        # yes, I'm using y_prob here!
+        "AUC": lambda real, pred: sklm.roc_auc_score(real, y_prob),
+        "Precision": sklm.precision_score,
+        "Recall": sklm.recall_score,
+    }
+    return evaluate_metrics(y_true, y_pred, metrics)
 
 
 def main():
@@ -91,13 +141,15 @@ def main():
     update_parser_train(parser)
 
     args = parser.parse_args()
+    
+    logging.basicConfig(
+    stream=sys.stdout, format='%(levelname)s: %(message)s', level=args.verbose)
+    
     update_args_json(args, logging)
 
-    logging.basicConfig(
-    stream=sys.stdout, format='%(levelname)s: %(message)s', level=args['verbose'])
+    # 
+    benchmark(args)
 
-
-    pass
 
 if __name__ == '__main__':
 
