@@ -102,12 +102,17 @@ def benchmark(args):
     
     data = prepare_dataset(args.datadir, args.dataset, args.nrows)
 
-    booster, t_train = train(args, data)
-    booster.save_model(f'xgb-{args.dataset}-model.json')
+    model_path = f"xgb-{args.dataset}-model.json"
+
+    if os.path.exists(model_path):
+        booster = xgb.XGBClassifier()
+        booster.load_model(model_path)
+    else:
+        booster, t_train = train(args, data)
+        booster.save_model(model_path)
+        print(f'xgb train time is : {t_train.interval}')
 
     pred_res, t_pred = predict(booster, data)
-
-    print(f'xgb train time is : {t_train.interval}')
     print(f'xgb pred time is : {t_pred.interval}')
 
     print(pred_res)
