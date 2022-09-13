@@ -1,30 +1,32 @@
 {
     "common": {
         "lib": "xgboost",
-        "data-format": "pandas",
-        "data-order": "F",
+        "data_format": "pandas",
+        "data_order": "F",
         "dtype": "float32",
         "algorithm": "gbt_pred",
-        "tree-method": "hist",
-        "count-dmatrix": "",
+        "tree_method": "hist",
+        "count_dmatrix": "",
         "datadir": "GBM-Benchmark/data"
     },
     "cases": [
         {
             "dataset": "higgs",
-            "reg-alpha": 0.9,
-            "max-bin": 256,
-            "scale-pos-weight": 2,
-            "learning-rate": 0.1,
+            "reg_alpha": 0.9,
+            "max_bin": 256,
+            "scale_pos_weight": 2,
+            "learning_rate": 0.1,
             "subsample": 1,
-            "reg-lambda": 1,
-            "min-child-weight": 0,
-            "max-depth": 8,
-            "max-leaves": 256,
-            "n-estimators": 1000,
+            "reg_lambda": 1,
+            "min_child_weight": 0,
+            "max_depth": 8,
+            "max_leaves": 256,
+            "n_estimators": 1000,
             "objective": "binary:logistic",
-            "enable-experimental-json-serialization": "False",
-            "inplace-predict": ""
+            "enable_experimental_json_serialization": "False",
+            "inplace_predict": "",
+            "nrows": 2500000,
+            "backend": "xgb"
         }
     ]
 }
