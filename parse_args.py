@@ -46,7 +46,12 @@ def update_parser_train(parser):
                         choices=('reg:squarederror', 'binary:logistic',
                                 'multi:softmax', 'multi:softprob'),
                         help='Specifies the learning task')
+    parser.add_argument('--backend', type=str,
+                        choices=('skl', 'xgb'),
+                        help='Specifies the API')
 
+    parser.add_argument('--n-estimators', type=int, default=100,
+                        help='The number of gradient boosted trees')
 
     parser.add_argument(
         "-nrows",
