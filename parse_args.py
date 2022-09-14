@@ -1,4 +1,5 @@
 
+from email.policy import default
 import os
 import argparse
 from pathlib import Path
@@ -66,6 +67,15 @@ def update_parser_train(parser):
     )
 
 
+def update_parser_test(parser):
+    parser.add_argument('--test-loop', type=int, default=10,
+                        help='test times for prediction')
+
+    parser.add_argument('--hist-path', type=str, default='hist.png',
+                        help='histgram path')
+
+    parser.add_argument('--visualize', type=bool, default=False)
+
 def update_args_json(args, logging):
     
     config_path = args.configs
@@ -80,7 +90,6 @@ def update_args_json(args, logging):
         params.update(params_set.copy())
         # update arg dict
         vars(args).update(params)
-
 
 
 
