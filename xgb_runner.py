@@ -1,21 +1,21 @@
 
-from ast import arg
 import os
+from ast import arg
 import argparse
 from pathlib import Path
 import sys
 import logging
-
+from timer import Timer
 import numpy as np
 
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
 
-import sklearn.metrics as sklm
 
-from parse_args import update_parser_train, update_args_json
+import visualization
+from parse_args import update_parser_train, update_parser_test, update_args_json
 from dataset import prepare_dataset, get_data
-from timer import Timer
+from utils import classification_metrics
 
 
 ROOT_PATH = Path(__file__).absolute()
@@ -55,7 +55,7 @@ def parse_args():
     return parser
 
 
-def train(args, data):
+def train(args, data, backend):
 
     def train_skl(args, data):
 
@@ -100,20 +100,24 @@ def train(args, data):
         
         return model, t_train
 
-    func = f"train_{args.backend}"
+    func = f"train_{backend}"
 
     return eval(func)(args, data)
 
 
-def predict(args, model, data):
+# predict group
+def predict_baseline(args, model, data, backend):
+
+    test_loop = args.test_loop
 
     def predict_skl(model, data):
 
         X_test, y_test = data.X_test, data.y_test
 
         with Timer() as t_pred:
-            prob_prediction = model.predict(X_test)
-
+            for i in range(test_loop):
+                prob_prediction = model.predict(X_test)
+            
         pred_res = classification_metrics(y_test, prob_prediction)
 
         return pred_res, t_pred
@@ -124,85 +128,130 @@ def predict(args, model, data):
         dmatrix = xgb.DMatrix(X_test, y_test)
 
         with Timer() as t_pred:
-            prob_prediction = model.predict(dmatrix)
+            for i in range(test_loop):
+                prob_prediction = model.predict(dmatrix)
 
         pred_res = classification_metrics(y_test, prob_prediction)
 
         return pred_res, t_pred
 
-    func = f"predict_{args.backend}"
-
+    func = f"predict_{backend}"
+    
     return eval(func)(model, data)
+
+def predict_hummingbird(args, model, data):
+    import hummingbird.ml
+
+    X_test, y_test = data.X_test, data.y_test
+    
+    print("Start model conversion")
+    with Timer() as t_convert:
+        hummingbird_model = hummingbird.ml.convert(model, "tvm", X_test)
+    print(f"End model conversion. It costs {t_convert.interval}s")
+
+    test_loop = args.test_loop
+    with Timer() as t_pred:
+        for i in range(test_loop):
+            prob_prediction = hummingbird_model.predict(X_test)
+
+    pred_res = classification_metrics(y_test, prob_prediction)
+    
+    return pred_res, t_pred
+
+def predict_treelite(args, model, data):
+    import treelite
+    import treelite_runtime  
+
+    # 
+    X_test, y_test = data.X_test, data.y_test
+    
+    # 
+    model = treelite.Model.from_xgboost(model)
+    
+    toolchain = 'gcc'
+    print("Start model conversion")
+    with Timer() as t_convert:
+        # model.export_lib(toolchain=toolchain, libpath='./mymodel.so', verbose=True)
+        model.export_lib(toolchain=toolchain, libpath='./mymodel.so',
+                        params={'parallel_comp': 32}, verbose=True)
+    print(f"End model conversion. It costs {t_convert.interval}s")
+
+    predictor = treelite_runtime.Predictor('./mymodel.so', verbose=True)
+    dmat = treelite_runtime.DMatrix(X_test)
+
+    test_loop = args.test_loop
+    with Timer() as t_pred:
+        for i in range(test_loop):
+            prob_prediction = predictor.predict(dmat)
+
+    pred_res = classification_metrics(y_test, prob_prediction)
+    
+    return pred_res, t_pred
 
 
 def benchmark(args):
 
     data = prepare_dataset(args.datadir, args.dataset, args.nrows)
 
-    model_path = f"xgb-{args.dataset}-{args.backend}-model.json"
+    # 0. model training
+    # model_path = f"xgb-{args.dataset}-model.json"
+    model_path = "xgb-higgs-skl-model.json"
 
     if os.path.exists(model_path):
-        booster = load_model(args.backend, model_path)
+        booster_native = load_model('xgb', model_path)
+        booster_sklearn = load_model('skl', model_path)
     else:
-        booster, t_train = train(args, data)
-        booster.save_model(model_path)
-        print(f'xgb train time is : {t_train.interval}')
+        # booster_native, t_train_native = train(args, data, 'xgb')
+        booster_sklearn, t_train_sklearn = train(args, data, 'skl')
+        booster_sklearn.save_model(model_path)
+        booster_native = load_model('xgb', model_path)
 
-    pred_res, t_pred = predict(args, booster, data)
-    print(f'xgb pred time is : {t_pred.interval}')
+        print(f'xgb train time is : {t_train_sklearn.interval}')
 
-    # visualize_tree(booster)
-    print(pred_res)
+    # 1. xgboost as baseline
+    pred_res, t_pred = predict_baseline(args, booster_native, data, 'xgb')
+    pred_res, t_pred = predict_baseline(args, booster_sklearn, data, 'skl')
+    print(f'xgb pred time is : {t_pred.interval/args.test_loop}')
+    print('xgb result: ', pred_res)
+
+    if args.visualize:
+        visualization.visualize(args, booster_native)
+
+    # 2. test hummingbird
+    pred_res_hb, t_pred_hb = predict_hummingbird(args, booster_sklearn, data)
+    print(f'hbird pred time is : {t_pred_hb.interval/args.test_loop}')
+    print('hbird result: ', pred_res_hb)
+
+    # 3. test treelite
+    pred_res_tl, t_pred_tl = predict_treelite(args, booster_native, data)
+    print(f'treelite pred time is : {t_pred_tl.interval/args.test_loop}')
+    print('treelite result: ', pred_res_tl)
+
 
 
 def load_model(backend, model_path):
 
     if backend == 'xgb':
         booster = xgb.Booster()
+        booster.load_model(model_path)
+
     elif backend == 'skl':
         booster = xgb.XGBClassifier()
+        booster.load_model(model_path)
+
     else:
-        raise("error")
-    
-    booster.load_model(model_path)
+        raise("error backend")
+
     return booster
 
 
-def classification_metrics(y_true, y_prob, threshold=0.5):
-
-    def evaluate_metrics(y_true, y_pred, metrics):
-        res = {}
-        for metric_name, metric in metrics.items():
-            res[metric_name] = metric(y_true, y_pred)
-        return res
-
-    y_true = y_true.to_numpy()
-
-    y_pred = np.where(y_prob > threshold, 1, 0)
-    metrics = {
-        "Accuracy": sklm.accuracy_score,
-        "Log_Loss": lambda real, pred: sklm.log_loss(real, y_prob, eps=1e-5),
-        # yes, I'm using y_prob here!
-        "AUC": lambda real, pred: sklm.roc_auc_score(real, y_prob),
-        "Precision": sklm.precision_score,
-        "Recall": sklm.recall_score,
-    }
-    return evaluate_metrics(y_true, y_pred, metrics)
-
-
-def visualize_tree(model, num_trees=0):
-    from xgboost import plot_tree
-    import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(figsize=(300, 300))
-    plot_tree(model, num_trees=num_trees, ax=ax)
-    plt.savefig(f"tree-{num_trees}.pdf")
 
 
 def main():
 
     parser = parse_args()
     update_parser_train(parser)
+    update_parser_test(parser)
 
     args = parser.parse_args()
     
