@@ -7,7 +7,9 @@
         "algorithm": "gbt_pred",
         "tree_method": "hist",
         "count_dmatrix": "",
-        "datadir": "GBM-Benchmark/data"
+        "datadir": "GBM-Benchmark/data",
+        "test_loop": 10,
+        "visualize": false
     },
     "cases": [
         {
@@ -21,12 +23,12 @@
             "min_child_weight": 0,
             "max_depth": 8,
             "max_leaves": 256,
-            "n_estimators": 1000,
+            "n_estimators": 500,
             "objective": "binary:logistic",
             "enable_experimental_json_serialization": "False",
             "inplace_predict": "",
             "nrows": 2500000,
-            "backend": "xgb"
+            "backend": "skl"
         }
     ]
 }
