@@ -115,8 +115,7 @@ def predict_baseline(args, model, data, backend):
         X_test, y_test = data.X_test, data.y_test
 
         with Timer() as t_pred:
-            for i in range(test_loop):
-                prob_prediction = model.predict(X_test)
+            prob_prediction = model.predict(X_test)
             
         pred_res = classification_metrics(y_test, prob_prediction)
 
@@ -128,8 +127,7 @@ def predict_baseline(args, model, data, backend):
         dmatrix = xgb.DMatrix(X_test, y_test)
 
         with Timer() as t_pred:
-            for i in range(test_loop):
-                prob_prediction = model.predict(dmatrix)
+            prob_prediction = model.predict(dmatrix)
 
         pred_res = classification_metrics(y_test, prob_prediction)
 
@@ -173,7 +171,7 @@ def predict_treelite(args, model, data):
     with Timer() as t_convert:
         # model.export_lib(toolchain=toolchain, libpath='./mymodel.so', verbose=True)
         model.export_lib(toolchain=toolchain, libpath='./mymodel.so',
-                        params={'parallel_comp': 32}, verbose=True)
+                        params={'parallel_comp': 48}, verbose=True)
     print(f"End model conversion. It costs {t_convert.interval}s")
 
     predictor = treelite_runtime.Predictor('./mymodel.so', verbose=True)
@@ -209,10 +207,11 @@ def benchmark(args):
         print(f'xgb train time is : {t_train_sklearn.interval}')
 
     # 1. xgboost as baseline
-    pred_res, t_pred = predict_baseline(args, booster_native, data, 'xgb')
-    pred_res, t_pred = predict_baseline(args, booster_sklearn, data, 'skl')
-    print(f'xgb pred time is : {t_pred.interval/args.test_loop}')
-    print('xgb result: ', pred_res)
+    pred_res, t_pred_native = predict_baseline(args, booster_native, data, 'xgb')
+    pred_res, t_pred_sklearn = predict_baseline(args, booster_sklearn, data, 'skl')
+    print(f'xgb native API pred time is : {t_pred_native.interval}')
+    print(f'xgb sklearn API pred time is : {t_pred_sklearn.interval}')
+    print(f'xgb result: {pred_res}')
 
     if args.visualize:
         visualization.visualize(args, booster_native)
