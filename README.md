@@ -9,7 +9,7 @@ Currently, gbt_cpu_runner.py includes:
 3. treelite testing
 4. onedal (**TODO**)
 
-and next version will supply gbt_gpu_runner, which wil include:
+and next version will supply gbt_gpu_runner, which will include:
 
 1. xgboost testing
 2. hummingbird testing
