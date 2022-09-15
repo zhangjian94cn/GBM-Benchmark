@@ -54,7 +54,7 @@ def parse_args():
                         choices=("ERROR", "WARNING", "INFO", "DEBUG"))
     return parser
 
-
+# 
 def train(args, data, backend):
 
     def train_skl(args, data):
@@ -103,7 +103,6 @@ def train(args, data, backend):
     func = f"train_{backend}"
 
     return eval(func)(args, data)
-
 
 # predict group
 def predict_baseline(args, model, data, backend):
@@ -183,17 +182,17 @@ def predict_treelite(args, model, data):
             prob_prediction = predictor.predict(dmat)
 
     pred_res = classification_metrics(y_test, prob_prediction)
-    
     return pred_res, t_pred
 
 
+# 
 def benchmark(args):
 
     data = prepare_dataset(args.datadir, args.dataset, args.nrows)
 
     # 0. model training
     # model_path = f"xgb-{args.dataset}-model.json"
-    model_path = "xgb-higgs-skl-model.json"
+    model_path = "xgb-higgs-model.json"
 
     if os.path.exists(model_path):
         booster_native = load_model('xgb', model_path)
@@ -214,7 +213,7 @@ def benchmark(args):
     print(f'xgb result: {pred_res}')
 
     if args.visualize:
-        visualization.visualize(args, booster_native)
+        visualization.visualize(booster_native, args.hist_path)
 
     # 2. test hummingbird
     pred_res_hb, t_pred_hb = predict_hummingbird(args, booster_sklearn, data)
