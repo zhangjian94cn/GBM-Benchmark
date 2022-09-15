@@ -13,7 +13,7 @@ def plot_tree(model, num_trees=0):
     xgb.plot_tree(model, num_trees=num_trees, ax=ax)
     plt.savefig(f"tree-{num_trees}.pdf")
 
-def plot_hist(tree_depth, max_depth, hist_path):
+def plot_hist(tree_depth, save_path):
 
     legend = ['distribution']
  
@@ -41,7 +41,8 @@ def plot_hist(tree_depth, max_depth, hist_path):
             alpha = 0.6)
  
     # Creating histogram
-    N, bins, patches = axs.hist(np.array(tree_depth, dtype=int), bins = max_depth)
+    tree_depth_array = np.array(tree_depth, dtype=int)
+    N, bins, patches = axs.hist(tree_depth_array, bins = tree_depth_array.max())
     
     # Setting color
     fracs = ((N**(1 / 5)) / N.max())
@@ -59,7 +60,7 @@ def plot_hist(tree_depth, max_depth, hist_path):
     # plt.xlim((0, max_depth+1))
 
     # Show plot
-    plt.savefig(hist_path)
+    plt.savefig(save_path)
 
 # get tree depth
 def item_generator(json_input, lookup_key):
@@ -82,7 +83,18 @@ def get_tree_depth_list(model):
     return [get_tree_depth(x) for x in booster.get_dump(dump_format="json")]
 
 # interface
-def visualize(args, model):
+def visualize(model, save_path):
 
     tree_depth_list = get_tree_depth_list(model)
-    plot_hist(tree_depth_list, args.max_depth, args.hist_path)
+    plot_hist(tree_depth_list, save_path)
+
+
+if __name__ == '__main__':
+
+    model_path = ''
+    save_path = ''
+    
+    visualize(model, save_path)
+
+
+
