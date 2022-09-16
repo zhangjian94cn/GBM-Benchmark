@@ -87,7 +87,7 @@ def train(args, data, backend):
         with Timer() as t_train:
             model = model.fit(X_train, y_train)
 
-        return model, t_train
+        return model, t_train.interval
 
     def train_xgb(args, data):
 
@@ -98,7 +98,7 @@ def train(args, data, backend):
         with Timer() as t_train:
             model = xgb.train(param, dmatrix, args.n_estimators)
         
-        return model, t_train
+        return model, t_train.interval
 
     func = f"train_{backend}"
 
@@ -114,23 +114,28 @@ def predict_baseline(args, model, data, backend):
         X_test, y_test = data.X_test, data.y_test
 
         with Timer() as t_pred:
-            prob_prediction = model.predict(X_test)
+            for i in range(test_loop):
+                prob_prediction = model.predict(X_test)
             
         pred_res = classification_metrics(y_test, prob_prediction)
 
-        return pred_res, t_pred
+        return pred_res, t_pred.interval/args.test_loop
 
     def predict_xgb(model, data):
 
         X_test, y_test = data.X_test, data.y_test
-        dmatrix = xgb.DMatrix(X_test, y_test)
 
-        with Timer() as t_pred:
-            prob_prediction = model.predict(dmatrix)
+        t_pred_sum = 0
+        for i in range(test_loop):
+            dmatrix = xgb.DMatrix(X_test, y_test)
+            with Timer() as t_pred:
+                prob_prediction = model.predict(dmatrix)
+            
+            t_pred_sum += t_pred.interval
 
         pred_res = classification_metrics(y_test, prob_prediction)
 
-        return pred_res, t_pred
+        return pred_res, t_pred_sum/args.test_loop
 
     func = f"predict_{backend}"
     
@@ -153,7 +158,7 @@ def predict_hummingbird(args, model, data):
 
     pred_res = classification_metrics(y_test, prob_prediction)
     
-    return pred_res, t_pred
+    return pred_res, t_pred.interval/args.test_loop
 
 def predict_treelite(args, model, data):
     import treelite
@@ -182,7 +187,7 @@ def predict_treelite(args, model, data):
             prob_prediction = predictor.predict(dmat)
 
     pred_res = classification_metrics(y_test, prob_prediction)
-    return pred_res, t_pred
+    return pred_res, t_pred.interval/args.test_loop
 
 
 # 
@@ -203,13 +208,13 @@ def benchmark(args):
         booster_sklearn.save_model(model_path)
         booster_native = load_model('xgb', model_path)
 
-        print(f'xgb train time is : {t_train_sklearn.interval}')
+        print(f'xgb train time is : {t_train_sklearn}')
 
     # 1. xgboost as baseline
     pred_res, t_pred_native = predict_baseline(args, booster_native, data, 'xgb')
     pred_res, t_pred_sklearn = predict_baseline(args, booster_sklearn, data, 'skl')
-    print(f'xgb native API pred time is : {t_pred_native.interval}')
-    print(f'xgb sklearn API pred time is : {t_pred_sklearn.interval}')
+    print(f'xgb native API pred time is : {t_pred_native}')
+    print(f'xgb sklearn API pred time is : {t_pred_sklearn}')
     print(f'xgb result: {pred_res}')
 
     if args.visualize:
@@ -217,12 +222,12 @@ def benchmark(args):
 
     # 2. test hummingbird
     pred_res_hb, t_pred_hb = predict_hummingbird(args, booster_sklearn, data)
-    print(f'hbird pred time is : {t_pred_hb.interval/args.test_loop}')
+    print(f'hbird pred time is : {t_pred_hb}')
     print('hbird result: ', pred_res_hb)
 
     # 3. test treelite
     pred_res_tl, t_pred_tl = predict_treelite(args, booster_native, data)
-    print(f'treelite pred time is : {t_pred_tl.interval/args.test_loop}')
+    print(f'treelite pred time is : {t_pred_tl}')
     print('treelite result: ', pred_res_tl)
 
 
