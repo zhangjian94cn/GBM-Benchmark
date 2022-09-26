@@ -189,6 +189,28 @@ def predict_treelite(args, model, data):
     pred_res = classification_metrics(y_test, prob_prediction)
     return pred_res, t_pred.interval/args.test_loop
 
+def predict_onedal(args, model, data):
+    import daal4py as d4p
+
+    X_test, y_test = data.X_test, data.y_test
+
+    # Conversion to daal4py
+    daal_model = d4p.get_gbt_model_from_xgboost(model)
+
+    n_classes = len(np.unique(y_test))
+    daal_predict_algo = d4p.gbt_classification_prediction(
+        nClasses = n_classes,
+        resultsToEvaluate="computeClassLabels|computeClassProbabilities",
+        fptype='float'
+    )
+
+    test_loop = args.test_loop
+    with Timer() as t_pred:
+        for i in range(test_loop):
+            prob_prediction = daal_predict_algo.compute(X_test, daal_model)
+
+    pred_res = classification_metrics(y_test, prob_prediction.probabilities[:,1])
+    return pred_res, t_pred.interval/args.test_loop
 
 # 
 def benchmark(args):
@@ -197,7 +219,9 @@ def benchmark(args):
 
     # 0. model training
     # model_path = f"xgb-{args.dataset}-model.json"
-    model_path = "xgb-higgs-model.json"
+    # model_path = "xgb-higgs-model-1_2_0.json"
+    model_path = "xgb-higgs-model-1_6_1.json"
+    # model_path = "xgb-higgs-model-0_90.json"
 
     if os.path.exists(model_path):
         booster_native = load_model('xgb', model_path)
@@ -230,7 +254,9 @@ def benchmark(args):
     print(f'treelite pred time is : {t_pred_tl}')
     print('treelite result: ', pred_res_tl)
 
-
+    pred_res_od, t_pred_od = predict_onedal(args, booster_native, data)
+    print(f'oneDAL pred time is : {t_pred_od}')
+    print('oneDAL result: ', pred_res_od)
 
 def load_model(backend, model_path):
 
