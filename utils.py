@@ -41,7 +41,7 @@ def classification_metrics(y_true, y_prob, threshold=0.5):
             res[metric_name] = metric(y_true, y_pred)
         return res
 
-    y_true = y_true.to_numpy()
+    # y_true = y_true.to_numpy()
 
     y_pred = np.where(y_prob > threshold, 1, 0)
     metrics = {
