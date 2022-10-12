@@ -129,7 +129,9 @@ def predict_baseline(args, model, data, backend):
         for i in range(test_loop):
             dmatrix = xgb.DMatrix(X_test, y_test)
             with Timer() as t_pred:
+                # dmatrix = xgb.DMatrix(X_test, y_test)
                 prob_prediction = model.predict(dmatrix)
+                # class_prediction = np.where(prob_prediction >= 0.5, 1.0, 0.0)
             
             t_pred_sum += t_pred.interval
 
@@ -221,8 +223,8 @@ def benchmark(args):
     # model_path = f"xgb-{args.dataset}-model.json"
     # model_path = "xgb-higgs-model-1_2_0.json"
     # model_path = "xgb-higgs-model-1_6_1.json"
-    # model_path = "xgb-higgs-model-1_6_1-ntrees_1k.json"
-    model_path = "xgb-higgs-model-1_5_0-ntrees_1k.json"
+    model_path = "xgb-higgs-model-1_6_1-ntrees_1k.json"
+    # model_path = "xgb-higgs-model-1_5_0-ntrees_1k.json"
     # model_path = "xgb-higgs-model-0_90.json"
 
     # make the same model
