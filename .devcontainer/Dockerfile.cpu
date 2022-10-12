@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04
+FROM ubuntu:20.04
 
 COPY apt-install-and-clear.sh /usr/local/bin/apt-install-and-clear
 
@@ -36,7 +36,6 @@ WORKDIR /workspace
 RUN git clone --recursive https://github.com/apache/tvm tvm && \
     cd tvm && git checkout tags/v0.9.0 && pwd && mkdir build && \
     cp cmake/config.cmake build && \
-    sed -i 's/set(USE_CUDA OFF)/set(USE_CUDA ON)/g' build/config.cmake && \
     sed -i 's/set(USE_LLVM OFF)/set(USE_LLVM \/usr\/lib\/llvm-11\/bin\/llvm-config)/g' build/config.cmake && \
     cd build && cmake .. && make -j$(nproc) && \
     cd .. && cd python && python setup.py install --user; 
