@@ -6,10 +6,10 @@
     },
     "workspaceFolder": "/workspace",
     // "workspaceMount": "source=/home/zhangjian/data1/code/hummingbird/,target=/workspace,type=volume",
-    "workspaceMount": "source=/home/zhangjian/data1/code,target=/workspace,type=bind,consistency=cached",
+    "workspaceMount": "source=/home/zhangjian/code,target=/workspace,type=bind,consistency=cached",
     "runArgs": [
-        "--gpus",
-        "all",
+        // "--gpus",
+        // "all",
         // "--cpus",
         // "0.125"
     ],

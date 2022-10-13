@@ -15,7 +15,7 @@ _oneDalHome=/workspace/oneDAL
 _intelOneapiHome=/opt/intel/oneapi
 
 #Suppose you're using anaconda and use env named oneDal for oneDal building
-__conda_setup="$('/opt/conda/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+__conda_setup="$('/opt/conda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else
