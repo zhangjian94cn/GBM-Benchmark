@@ -84,6 +84,6 @@ make daal -j$(expr $(nproc) - 2)  PLAT=lnx32e
 # cp $_intelOneapiHome/dal/latest/lib/intel64/* /opt/conda/envs/benchmark/lib/
 # cp $_intelOneapiHome/tbb/latest/lib/intel64/* /opt/conda/envs/benchmark/lib/
 
-# cp $_oneDalHome/__release_lnx/daal/latest/lib/intel64/* /opt/conda/envs/benchmark/lib/
-# cp $_oneDalHome/__release_lnx/tbb/latest/lib/intel64/* /opt/conda/envs/benchmark/lib/
+cp $_oneDalHome/__release_lnx/daal/latest/lib/intel64/* /opt/conda/envs/benchmark/lib/
+cp $_oneDalHome/__release_lnx/tbb/latest/lib/intel64/* /opt/conda/envs/benchmark/lib/
 

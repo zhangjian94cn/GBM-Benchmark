@@ -27,7 +27,7 @@ COPY install/ubuntu_install_python_package.sh /install/ubuntu_install_python_pac
 RUN bash /install/ubuntu_install_python_package.sh
 
 # oneapi, hpc
- COPY install/ubuntu_install_oneapi.sh /install/ubuntu_install_oneapi.sh
+COPY install/ubuntu_install_oneapi.sh /install/ubuntu_install_oneapi.sh
 RUN bash /install/ubuntu_install_oneapi.sh
 
 # onedal

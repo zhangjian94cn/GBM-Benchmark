@@ -8,6 +8,9 @@ echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt
 
 apt update && apt install intel-basekit intel-hpckit -y
 
+echo "source /opt/intel/oneapi/compiler/latest/env/vars.sh" >> ~/.bashrc
+echo "source /opt/intel/oneapi/vtune/latest/vtune-vars.sh" >> ~/.bashrc
+
 
 
 
