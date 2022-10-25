@@ -21,7 +21,8 @@ set -u
 set -o pipefail
 
 echo "start install conda"
-cd /tmp && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+# cd /tmp && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+cd /tmp
 chmod +x Miniconda3-latest-Linux-x86_64.sh
 /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
 rm /tmp/Miniconda3-latest-Linux-x86_64.sh

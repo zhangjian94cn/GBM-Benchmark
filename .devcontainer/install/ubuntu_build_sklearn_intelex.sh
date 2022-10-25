@@ -37,5 +37,5 @@ export MPIROOT=/opt/intel/oneapi/mpi/latest/
 export OFF_ONEDAL_IFACE=1
 
 cd $_intelexHome;
-python setup.py develop --no-deps
+conda activate benchmark && python setup.py develop --no-deps
 # python setup.py install --single-version-externally-managed --record=record.txt
