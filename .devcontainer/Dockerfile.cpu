@@ -19,6 +19,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 
 # conda
 COPY install/ubuntu_install_conda.sh /install/ubuntu_install_conda.sh
+COPY install/Miniconda3-latest-Linux-x86_64.sh /tmp/Miniconda3-latest-Linux-x86_64.sh
 RUN bash /install/ubuntu_install_conda.sh
 ENV PATH=/opt/conda/bin:${PATH}
 
@@ -34,13 +35,13 @@ RUN bash /install/ubuntu_install_oneapi.sh
 COPY install/ubuntu_build_onedal.sh /install/ubuntu_build_onedal.sh
 RUN bash /install/ubuntu_build_onedal.sh
 
-# scikit-learn-intelex
-COPY install/ubuntu_build_sklearn_intelex.sh /install/ubuntu_build_sklearn_intelex.sh
-RUN bash /install/ubuntu_build_sklearn_intelex.sh
+# # scikit-learn-intelex
+# COPY install/ubuntu_build_sklearn_intelex.sh /install/ubuntu_build_sklearn_intelex.sh
+# RUN bash /install/ubuntu_build_sklearn_intelex.sh
 
-# tvm
-COPY install/ubuntu_build_tvm.sh /install/ubuntu_build_tvm.sh
-RUN bash /install/ubuntu_build_tvm.sh
+# # tvm
+# COPY install/ubuntu_build_tvm.sh /install/ubuntu_build_tvm.sh
+# RUN bash /install/ubuntu_build_tvm.sh
 
 
 ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/:${LD_LIBRARY_PATH}

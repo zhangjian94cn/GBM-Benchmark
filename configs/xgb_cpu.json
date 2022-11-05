@@ -7,8 +7,8 @@
         "algorithm": "gbt_pred",
         "tree_method": "hist",
         "count_dmatrix": "",
-        "datadir": "scikit-learn_bench/data", 
-        "test_loop": 10,
+        "datadir": "GBM-Benchmark/data", 
+        "test_loop": 1000,
         "visualize": false
     },
     "cases": [
@@ -23,7 +23,7 @@
             "min_child_weight": 0,
             "max_depth": 8,
             "max_leaves": 256,
-            "n_estimators": 1000,
+            "n_estimators": 1,
             "objective": "binary:logistic",
             "enable_experimental_json_serialization": "False",
             "inplace_predict": "",

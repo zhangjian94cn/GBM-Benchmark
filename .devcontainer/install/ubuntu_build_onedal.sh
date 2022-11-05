@@ -34,6 +34,8 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+conda activate benchmark
+
 conda create -n benchmark python=3.8 -y && \
 conda activate benchmark && \
 conda install -y impi-devel cython jinja2 numpy clang-tools pybind11 -c intel -c conda-forge && \

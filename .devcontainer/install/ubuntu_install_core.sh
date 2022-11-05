@@ -22,6 +22,10 @@ set -u
 set -x
 set -o pipefail
 
+touch /etc/apt/apt.conf.d/proxy.conf
+echo "Acquire::http::Proxy \"http://proxy-prc.intel.com:913\";" >> /etc/apt/apt.conf.d/proxy.conf
+echo "Acquire::https::Proxy \"http://proxy-prc.intel.com:913\";" >> /etc/apt/apt.conf.d/proxy.conf
+
 # install libraries for building c++ core on ubuntu
 apt-get update && apt-install-and-clear -y --no-install-recommends \
     apt-transport-https \
