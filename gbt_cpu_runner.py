@@ -129,7 +129,9 @@ def predict_baseline(args, model, data, backend):
         for i in range(test_loop):
             dmatrix = xgb.DMatrix(X_test, y_test)
             with Timer() as t_pred:
+                # dmatrix = xgb.DMatrix(X_test, y_test)
                 prob_prediction = model.predict(dmatrix)
+                # class_prediction = np.where(prob_prediction >= 0.5, 1.0, 0.0)
             
             t_pred_sum += t_pred.interval
 
@@ -220,8 +222,13 @@ def benchmark(args):
     # 0. model training
     # model_path = f"xgb-{args.dataset}-model.json"
     # model_path = "xgb-higgs-model-1_2_0.json"
-    model_path = "xgb-higgs-model-1_6_1.json"
+    # model_path = "xgb-higgs-model-1_6_1.json"
+    model_path = "xgb-higgs-model-1_6_1-ntrees_1k.json"
+    # model_path = "xgb-higgs-model-1_5_0-ntrees_1k.json"
     # model_path = "xgb-higgs-model-0_90.json"
+
+    # make the same model
+    # model_path = "scikit-learn_bench/xgb-higgs1m-model.json"
 
     if os.path.exists(model_path):
         booster_native = load_model('xgb', model_path)
@@ -244,16 +251,17 @@ def benchmark(args):
     if args.visualize:
         visualization.visualize(booster_native, args.hist_path)
 
-    # 2. test hummingbird
-    pred_res_hb, t_pred_hb = predict_hummingbird(args, booster_sklearn, data)
-    print(f'hbird pred time is : {t_pred_hb}')
-    print('hbird result: ', pred_res_hb)
+    # # 2. test hummingbird
+    # pred_res_hb, t_pred_hb = predict_hummingbird(args, booster_sklearn, data)
+    # print(f'hbird pred time is : {t_pred_hb}')
+    # print('hbird result: ', pred_res_hb)
 
-    # 3. test treelite
-    pred_res_tl, t_pred_tl = predict_treelite(args, booster_native, data)
-    print(f'treelite pred time is : {t_pred_tl}')
-    print('treelite result: ', pred_res_tl)
-
+    # # 3. test treelite
+    # pred_res_tl, t_pred_tl = predict_treelite(args, booster_native, data)
+    # print(f'treelite pred time is : {t_pred_tl}')
+    # print('treelite result: ', pred_res_tl)
+    
+    # 4. test onedal 
     pred_res_od, t_pred_od = predict_onedal(args, booster_native, data)
     print(f'oneDAL pred time is : {t_pred_od}')
     print('oneDAL result: ', pred_res_od)

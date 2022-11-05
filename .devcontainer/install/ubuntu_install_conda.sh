@@ -20,13 +20,15 @@ set -e
 set -u
 set -o pipefail
 
-cd /tmp && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+echo "start install conda"
+# cd /tmp && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+cd /tmp
 chmod +x Miniconda3-latest-Linux-x86_64.sh
 /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
 rm /tmp/Miniconda3-latest-Linux-x86_64.sh
 # /opt/conda/bin/conda upgrade --all
 # /opt/conda/bin/conda clean -ya
-
+echo "end install conda"
 
 /opt/conda/bin/conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
 /opt/conda/bin/conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
@@ -36,5 +38,6 @@ rm /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 
 /opt/conda/bin/conda install python=3.8 pip conda-build conda-verify 
+# /opt/conda/bin/conda install -y mamba -n base -c conda-forge
 /opt/conda/bin/conda init bash
 chmod -R a+w /opt/conda/

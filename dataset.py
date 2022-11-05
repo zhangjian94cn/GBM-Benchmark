@@ -90,6 +90,20 @@ def prepare_higgs(dataset_folder, nrows):
     return data
 
 
+def prepare_higgs_intel(dataset_folder, nrows):
+
+
+    X_train, X_test, y_train, y_test = \
+        np.load(os.path.join(dataset_folder, 'higgs1m_x_train.npy')), \
+        np.load(os.path.join(dataset_folder, 'higgs1m_x_test.npy')),  \
+        np.load(os.path.join(dataset_folder, 'higgs1m_y_train.npy')), \
+        np.load(os.path.join(dataset_folder, 'higgs1m_y_test.npy')),
+
+    data = Data(
+        X_train, X_test, y_train, y_test, LearningTask.CLASSIFICATION
+    )
+    return data
+
 
 def get_data(data, size=-1):
     np_data = data.to_numpy() if not isinstance(data, np.ndarray) else data

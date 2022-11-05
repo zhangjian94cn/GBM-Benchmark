@@ -7,13 +7,13 @@
         "algorithm": "gbt_pred",
         "tree_method": "hist",
         "count_dmatrix": "",
-        "datadir": "GBM-Benchmark/data",
-        "test_loop": 10,
+        "datadir": "GBM-Benchmark/data", 
+        "test_loop": 1000,
         "visualize": false
     },
     "cases": [
         {
-            "dataset": "higgs",
+            "dataset": "higgs_intel",
             "reg_alpha": 0.9,
             "max_bin": 256,
             "scale_pos_weight": 2,
@@ -23,7 +23,7 @@
             "min_child_weight": 0,
             "max_depth": 8,
             "max_leaves": 256,
-            "n_estimators": 500,
+            "n_estimators": 1,
             "objective": "binary:logistic",
             "enable_experimental_json_serialization": "False",
             "inplace_predict": "",

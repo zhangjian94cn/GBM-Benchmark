@@ -1,16 +1,37 @@
 {
     "extensions": ["ms-python.python", "visualstudioexptteam.vscodeintellicode"],
-    "dockerFile": "Dockerfile.gpu",
+    "dockerFile": "Dockerfile.cpu",
     "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
     },
+    "build": {
+        "args": {
+            "HTTP_PROXY": "http://child-prc.intel.com:913",
+            "HTTPS_PROXY": "http://child-prc.intel.com:913",
+            "NO_PROXY": "localhost,127.0.0.1,.example.com"
+        }
+    },
     "workspaceFolder": "/workspace",
     // "workspaceMount": "source=/home/zhangjian/data1/code/hummingbird/,target=/workspace,type=volume",
-    "workspaceMount": "source=/home/zhangjian/data1/code,target=/workspace,type=bind,consistency=cached",
+    "workspaceMount": "source=/home/zhangjian/code,target=/workspace,type=bind,consistency=cached",
     "runArgs": [
-        "--gpus",
-        "all",
+        // "--gpus",
+        // "all",
         // "--cpus",
         // "0.125"
+        "--pid=host",
+        "--cap-add=SYS_ADMIN",
+        "--cap-add=SYS_PTRACE",
+        "--device=/dev/dri",
+        "--security-opt",
+        "seccomp=unconfined"
     ],
+    // "containerEnv": {
+    //     "HTTP_PROXY": "${localEnv:HTTP_PROXY}",
+    //     "HTTPS_PROXY": "${localEnv:HTTP_PROXY}",
+    //     "http_proxy": "${localEnv:HTTP_PROXY}",
+    //     "https_proxy": "${localEnv:HTTP_PROXY}"
+    // },
 }
+
+// https://stackoverflow.com/questions/19215177/how-to-solve-ptrace-operation-not-permitted-when-trying-to-attach-gdb-to-a-pro
