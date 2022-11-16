@@ -3,8 +3,7 @@
 #include <chrono>
 #include <cstdlib>
 
-// #include "./tree_model_base.h"
-#include "tree_model_vec.h"
+#include "group_tree.h"
 
 
 

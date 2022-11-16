@@ -52,6 +52,8 @@ int main(int argc, char** argv) {
     std::vector<float> b(smpLen, 1.f);
 
     unsigned int* index = new unsigned int[smpLen];
+    prepare_idx(index);
+    
     // 
     auto start = std::chrono::system_clock::now();
     for(int i = 0; i < cycleNum; ++ i) {

@@ -21,13 +21,22 @@ SET(CMAKE_CXX_FLAGS  "-mavx512f -mavx512bw")
 
 
 set(INCLUDE_DIR 
-    "include"
+    "include",
+    "common",
+    # "frontend"
 )
 include_directories (${INCLUDE_DIR}) 
 
 # dmlc-core
 
 add_executable( TEST_tree 
-    vector_tree.cpp 
+    main.cpp 
+    group_tree.cpp 
     common/common.cpp
+    frontend/simple/xgboost_json.cpp
+    frontend/simple/xgboost_json.h
+    include/frontend.h
+    include/group_tree.h
+    common/common.h
+    common/pred_transform.h
 )
