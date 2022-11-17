@@ -15,7 +15,6 @@ struct ParsedModelInfo {
   // std::string objective_name;
 };
 
-void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt);
 
 
 

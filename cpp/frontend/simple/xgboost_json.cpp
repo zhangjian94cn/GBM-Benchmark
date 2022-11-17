@@ -31,6 +31,7 @@ void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
         treeInfo.tree_depth = di["max_depth"].GetInt();
     }
 
+    gbt.setTreeDepth(treeInfo.tree_depth);
     {
         const rapidjson::Value& model = d["learner"].GetObject()["gradient_booster"].GetObject()["model"];
         const rapidjson::Value& trees = model.GetObject()["trees"].GetArray();
