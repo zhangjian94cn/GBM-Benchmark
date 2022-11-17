@@ -179,6 +179,7 @@ public:
     }
 
     RegTree(int depthN, const std::vector<float>& weight, const std::vector<int>& index) {
+        _depthN = depthN;
         _depthG = _depthN / 4;
         int gNum = ((1 << (4 * _depthG)) - 1) / (16 - 1);
         _groups.resize(gNum);
@@ -225,7 +226,7 @@ public:
         }
         int offset = _groups[idx].predictGroup(smpArr, true);
         float leafVal = _groups[idx].leafVal(offset);
-        return sigmoid(leafVal);
+        return leafVal;
     }
 
     float testTimePre(float* smpArr){
@@ -277,7 +278,7 @@ public:
         for(int i = 0; i < _treeNum; ++ i) {
             res += _trees[i]->predictTree(smpArr);
         }
-        return res;
+        return sigmoid(res);
     }
 
     float testTimePre(float* smpArr) {

@@ -23,12 +23,17 @@ SET(CMAKE_CXX_FLAGS  "-mavx512f -mavx512bw")
 set(INCLUDE_DIR 
     "include",
     "common",
-    # "frontend"
+    "io"
 )
 include_directories (${INCLUDE_DIR}) 
 
-# dmlc-core
+# cnpy
+find_package(ZLIB REQUIRED)
+include_directories(${ZLIB_INCLUDE_DIRS})
+add_library(cnpy SHARED "io/cnpy.cpp")
+target_link_libraries(cnpy ${ZLIB_LIBRARIES})
 
+# exe
 add_executable( TEST_tree 
     main.cpp 
     group_tree.cpp 
@@ -40,3 +45,4 @@ add_executable( TEST_tree
     common/common.h
     common/pred_transform.h
 )
+target_link_libraries(TEST_tree cnpy)

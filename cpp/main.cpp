@@ -4,8 +4,8 @@
 #include <cstdlib>
 
 #include "group_tree.h"
-
-
+#include "frontend.h"
+#include "cnpy.h"
 
 void prepareSmp(float* smpArr) {
 
@@ -20,7 +20,7 @@ void prepareSmp(float* smpArr) {
 }
 
 // 
-int main(int argc, char** argv) {
+void test1() {
     
     // prepare sample
     float smpArr[100];
@@ -40,4 +40,36 @@ int main(int argc, char** argv) {
     // std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
     std::cout << "result: " << res << std::endl;
 
+}
+
+
+void test2() {
+
+    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep4_8.json";
+    std::string dataPathX = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_x_test.npy";
+    std::string dataPathY = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_y_test.npy";
+    
+    GBTreeModel gbt = GBTreeModel();
+    LoadXGBoostJSONModel(modelPath.c_str(), gbt);
+
+    cnpy::NpyArray arrX = cnpy::npy_load(dataPathX);
+    cnpy::NpyArray arrY = cnpy::npy_load(dataPathY);
+    float* loaded_dataX = arrX.data<float>();
+    float* loaded_dataY = arrY.data<float>();
+
+    int featDim = arrX.shape[1];
+    std::vector<float> smpX(featDim), smpY(featDim);
+    for (int i = 0; i < featDim; ++ i) {
+        smpX[i] = loaded_dataX[i];
+        smpY[i] = loaded_dataY[i];
+    } 
+
+    float res = gbt.predictGBT(smpX.data());
+
+}
+
+int main() {
+
+    test2();
+    return 0;
 }
