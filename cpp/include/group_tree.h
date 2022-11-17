@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <limits>
 #include <vector>
 #include <string>
@@ -10,13 +12,14 @@
 #include <iostream>
 // 
 
-#include "common/common.h"
-
+#include "common.h"
+#include "pred_transform.h"
 
 static const int gnodeNum = sizeof(__m512) / sizeof(int);
-static const int smpLen  = 16;
-using SampleGroupT = __m512;
+static const int smpLen = 16;
+static const int gInnerDep = 4;
 
+using SampleGroupT = __m512;
 
 union FeatIdx {
     __m512i i;
@@ -43,6 +46,11 @@ public:
     NodeGroup(FeatIdx& _fia, FeatVal& _fiv, std::vector<int32_t>& _children) : 
             _fidxArr(_fia), _fvalArr(_fiv), _children(_children) {}
 
+    void setNodeData(int nIdx, float fVal, int fIdx) {
+        _fidxArr.ii[nIdx] = fIdx;
+        _fvalArr.vv[nIdx] = fVal;
+    }
+
     void initGroupData(int featNum, int nodeNum) {
         std::random_device rd;
         std::default_random_engine e(rd());
@@ -60,7 +68,8 @@ public:
     }
 
     void initGroupChildren(int gDep, int gCol) {
-        int gNumPre = gDep == 0 ? 0 : ((1 << (4*(gDep-1))) - 1) / (16 - 1);
+        // int gNumPre = gDep == 0 ? 0 : ((1 << (4*(gDep-1))) - 1) / (16 - 1);
+        int gNumPre = gDep == 0 ? 0 : ((1 << (4 * gDep)) - 1) / (16 - 1);
         int iStart = gNumPre + gCol * gnodeNum;
         for (int i = iStart, iEnd = iStart + gnodeNum; i < iEnd; ++i) {
             _children[i - iStart] = i;
@@ -149,20 +158,61 @@ private:
 
 class RegTree {
 public:
-    RegTree() : _depthN(8) {
+    RegTree() : _depthN(2) {
         
         // group depth = 4
         _depthG = _depthN / 4;
-        int gNum = ((1 << (4*_depthG)) - 1) / (16 - 1);
+        int gNum = ((1 << (4 * _depthG)) - 1) / (16 - 1);
         _groups.resize(gNum);
         
         for (int i = 0; i < _depthG; ++i) {
-            int gNumPre = i == 0 ? 0 : ((2 << (4*(i-1))) - 1) / (16 - 1);
+            // int gNumPre = i == 0 ? 0 : ((2 << (4*(i-1))) - 1) / (16 - 1);
+            int gNumPre = i == 0 ? 0 : ((1 << (4 * i)) - 1) / (16 - 1);
             for (int j = 0; j < (1 << (4*i)); ++ j) {
                 int gIdx = gNumPre + j;
                 _groups[gIdx].initGroupData(smpLen, 16);
                 if (i != _depthG-1) {
                     _groups[gIdx].initGroupChildren(i, j);
+                }
+            }
+        }
+    }
+
+    RegTree(int depthN, const std::vector<float>& weight, const std::vector<int>& index) {
+        _depthN = depthN;
+        _depthG = _depthN / 4;
+        int gNum = ((1 << (4 * _depthG)) - 1) / (16 - 1);
+        _groups.resize(gNum);
+
+        for (int i = 0; i < _depthG; ++i) {
+            // previous group number
+            int gNumPre = i == 0 ? 0 : ((1 << (4 * i)) - 1) / (16 - 1);
+            // current group number
+            int gNumCur = 1 << (4 * i);
+            // node offset of current group row
+            int nNumPre = 15 * gNumPre;
+            // traverse current group by row
+            for (int r = 0; r < gInnerDep; ++ r) {
+                for (int j = 0; j < gNumCur; ++ j) {
+                    // current group index 
+                    int gIdxCur = gNumPre + j;
+                    // previous node in a group
+                    int rPre = r == 0 ? 0 : (1 << r) - 1;
+                    // jPre represents the start idx of node in this line of group
+                    int jPre = rPre * gNumCur + j * (1 << r);
+                    // traverse current group's row
+                    for (int n = 0; n < (1 << r); ++ n) {
+                        int nIdx = nNumPre + jPre + n;
+                        _groups[gIdxCur].setNodeData(rPre + n, weight[nIdx], index[nIdx]);
+                    }
+                }
+            }
+            
+            // init group children
+            for (int j = 0; j < gNumCur; ++ j) {
+                int gIdxCur = gNumPre + j;
+                if (i != _depthG - 1) {
+                    _groups[gIdxCur].initGroupChildren(i, j);
                 }
             }
         }
@@ -175,20 +225,24 @@ public:
             idx = _groups[idx].nextGroup(offset);
         }
         int offset = _groups[idx].predictGroup(smpArr, true);
-        return _groups[idx].leafVal(offset);
+        float leafVal = _groups[idx].leafVal(offset);
+        return leafVal;
+    }
+
+    float testTimePre(float* smpArr){
+        return _groups[0].testTime_core(smpArr);
     }
 
     float testTime(float* smpArr){
-        // float volatile res = 0.f;
-        // auto start = std::chrono::system_clock::now();
-        // for (int i = 0; i < Common::cycleNum; ++ i){
-        //     res = _groups[0].predictGroup(smpArr);
-        // }
-        // auto end = std::chrono::system_clock::now();
-        // std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
+        float volatile res = 0.f;
+        auto start = std::chrono::system_clock::now();
+        for (int i = 0; i < Common::cycleNum; ++ i){
+            res = _groups[0].predictGroup(smpArr);
+        }
+        auto end = std::chrono::system_clock::now();
+        std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
         
-        // return res;
-        return _groups[0].testTime_core(smpArr);
+        return res;
     }
 
     void loadModel() {}
@@ -204,36 +258,47 @@ private:
 
 class GBTreeModel {
 public:
-    // void loadModel(Json const& in) = 0;
-    GBTreeModel() : _treeNum(10) {
-        for (int i = 0; i < _treeNum; ++ i) {
-            _trees.push_back(std::unique_ptr<RegTree>(new RegTree()));
-        }
+    GBTreeModel() : _treeNum(0) {
+        // for (int i = 0; i < _treeNum; ++ i) {
+        //     _trees.push_back(RegTree());
+        // }
     };
     
+    void setTreeDepth(int depth) {
+        _depth = depth;
+    }
+
+    void pushTree(const std::vector<float>& weight, const std::vector<int>& index) {
+        ++ _treeNum;
+        _trees.push_back(new RegTree(_depth, weight, index));
+    }
+
     float predictGBT(float* smpArr) {
         float res = 0;
         for(int i = 0; i < _treeNum; ++ i) {
             res += _trees[i]->predictTree(smpArr);
         }
-        return res;
+        return sigmoid(res);
+    }
+
+    float testTimePre(float* smpArr) {
+        return _trees[0]->testTime(smpArr);
     }
 
     float testTime(float* smpArr) {
-        // float res = 0.f;
-        // auto start = std::chrono::system_clock::now();
-        // for (int i = 0; i < Common::cycleNum; ++ i){
-        //     res = _trees[0]->predictTree(smpArr);
-        // }
-        // auto end = std::chrono::system_clock::now();
-        // std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
-        // return res;
-        return _trees[0]->testTime(smpArr);
+        float res = 0.f;
+        auto start = std::chrono::system_clock::now();
+        for (int i = 0; i < Common::cycleNum; ++ i){
+            res = _trees[0]->predictTree(smpArr);
+        }
+        auto end = std::chrono::system_clock::now();
+        std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
+        return res;
     }
 
 private:
     // GBTreeModelParam param;
-    std::vector<std::unique_ptr<RegTree>> _trees;
+    std::vector<RegTree*> _trees;
     int _treeNum;
-
+    int _depth;
 };

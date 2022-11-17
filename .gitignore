@@ -1,3 +1,9 @@
 *.pyc
 
 data/*
+
+**/r0*/
+
+*.out
+
+build/*

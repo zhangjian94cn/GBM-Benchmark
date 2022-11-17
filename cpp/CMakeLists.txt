@@ -21,13 +21,28 @@ SET(CMAKE_CXX_FLAGS  "-mavx512f -mavx512bw")
 
 
 set(INCLUDE_DIR 
-    "include"
+    "include",
+    "common",
+    "io"
 )
 include_directories (${INCLUDE_DIR}) 
 
-# dmlc-core
+# cnpy
+find_package(ZLIB REQUIRED)
+include_directories(${ZLIB_INCLUDE_DIRS})
+add_library(cnpy SHARED "io/cnpy.cpp")
+target_link_libraries(cnpy ${ZLIB_LIBRARIES})
 
+# exe
 add_executable( TEST_tree 
-    vector_tree.cpp 
+    main.cpp 
+    group_tree.cpp 
     common/common.cpp
+    frontend/simple/xgboost_json.cpp
+    frontend/simple/xgboost_json.h
+    include/frontend.h
+    include/group_tree.h
+    common/common.h
+    common/pred_transform.h
 )
+target_link_libraries(TEST_tree cnpy)
