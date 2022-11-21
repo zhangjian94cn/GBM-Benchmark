@@ -33,7 +33,7 @@ union FeatVal {
 
 union nodeStat {
     __mmask16  m;
-    char mm[sizeof(__mmask16) / sizeof(char)];
+    uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
 };
 
 // 
@@ -42,6 +42,10 @@ class NodeGroup {
 public:
     NodeGroup() {
         _children.resize(gnodeNum, 0);
+        for (int i = 0; i < gnodeNum; ++ i) {
+            _fidxArr.ii[i] = 0;
+            _fvalArr.vv[i] = 0.f;
+        }
     }
     NodeGroup(FeatIdx& _fia, FeatVal& _fiv, std::vector<int32_t>& _children) : 
             _fidxArr(_fia), _fvalArr(_fiv), _children(_children) {}
