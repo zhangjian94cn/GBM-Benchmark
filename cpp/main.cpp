@@ -58,13 +58,28 @@ void test2() {
     float* loaded_dataY = arrY.data<float>();
 
     int featDim = arrX.shape[1];
-    std::vector<float> smpX(featDim), smpY(featDim);
-    for (int i = 0; i < featDim; ++ i) {
+    int dataDim = arrX.shape[0];
+    std::vector<float> smpX(featDim * dataDim), smpY(featDim * dataDim);
+    std::vector<float> res(featDim * dataDim);
+    for (int i = 0; i < featDim * dataDim; ++ i) {
+        // smpX[i] = loaded_dataX[i] - 0.384;
         smpX[i] = loaded_dataX[i];
         smpY[i] = loaded_dataY[i];
     } 
 
-    float res = gbt.predictGBT(smpX.data());
+    auto start = std::chrono::system_clock::now();
+    for (int i = 0; i < dataDim; ++ i) {
+        res[i] = gbt.predictGBT(smpX.data() + i * featDim);
+    }
+    auto end = std::chrono::system_clock::now(); 
+    std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
+    
+    // print result
+    for (int i = 0; i < dataDim; ++ i) {
+        if (i % 1000 == 0) {
+            std::cout << res[i] << std::endl;
+        }
+    }
 
 }
 

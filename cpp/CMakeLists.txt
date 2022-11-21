@@ -12,12 +12,12 @@ project( TEST )
 # set(CMAKE_CXX_COMPILER ${Intel_CXX_COMPILER})
 
 
-# SET(CMAKE_C_COMPILER "icc")
-# SET(CMAKE_CXX_COMPILER "icpc")
+SET(CMAKE_C_COMPILER "icc")
+SET(CMAKE_CXX_COMPILER "icpc")
 
 # add_subdirectory(./dmlc-core)
-SET(CMAKE_CXX_FLAGS  "-mavx512f -mavx512bw")
-# SET(CMAKE_CXX_FLAGS  "-mavx512f -mavx512bw -O3")
+SET(CMAKE_C_FLAGS  "-xhost -O3")
+SET(CMAKE_CXX_FLAGS  "-xhost -O3")
 
 
 set(INCLUDE_DIR 
