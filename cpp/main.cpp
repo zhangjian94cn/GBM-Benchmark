@@ -2,10 +2,17 @@
 #include <random>
 #include <chrono>
 #include <cstdlib>
+#include <cstdio>
 
 #include "group_tree.h"
 #include "frontend.h"
 #include "cnpy.h"
+
+#include <ittnotify.h>
+
+
+__itt_domain* domain = __itt_domain_create("predict");
+__itt_string_handle* handle_main = __itt_string_handle_create("test.zhangjian");
 
 void prepareSmp(float* smpArr) {
 
@@ -16,6 +23,12 @@ void prepareSmp(float* smpArr) {
     // init sample
     for (int i =0; i < smpLen; ++i){
         smpArr[i] = urdSmp(e);
+    }
+}
+
+void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vector<float> &res) {
+    for (int i = 0; i < dataDim; ++ i) {
+        res[i] = gbt.predictGBT(data + i * featDim);
     }
 }
 
@@ -57,20 +70,28 @@ void test2() {
     float* loaded_dataX = arrX.data<float>();
     float* loaded_dataY = arrY.data<float>();
 
+
+
     int featDim = arrX.shape[1];
     int dataDim = arrX.shape[0];
     std::vector<float> smpX(featDim * dataDim), smpY(featDim * dataDim);
     std::vector<float> res(featDim * dataDim);
-    for (int i = 0; i < featDim * dataDim; ++ i) {
-        // smpX[i] = loaded_dataX[i] - 0.384;
-        smpX[i] = loaded_dataX[i];
-        smpY[i] = loaded_dataY[i];
-    } 
+    // for (int i = 0; i < featDim * dataDim; ++ i) {
+    //     // smpX[i] = loaded_dataX[i] - 0.384;
+    //     smpX[i] = loaded_dataX[i];
+    //     smpY[i] = loaded_dataY[i];
+    // } 
+    printf("here \n");
+
+
 
     auto start = std::chrono::system_clock::now();
-    for (int i = 0; i < dataDim; ++ i) {
-        res[i] = gbt.predictGBT(smpX.data() + i * featDim);
+    __itt_task_begin(domain, __itt_null, __itt_null, handle_main);
+    for (int k = 0; k < 1000; ++ k) {
+       pred_core(gbt, smpX.data(), dataDim, featDim, res);
     }
+    __itt_task_end(domain);
+
     auto end = std::chrono::system_clock::now(); 
     std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
     

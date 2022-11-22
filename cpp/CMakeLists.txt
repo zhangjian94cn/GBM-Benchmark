@@ -23,7 +23,8 @@ SET(CMAKE_CXX_FLAGS  "-xhost -O3")
 set(INCLUDE_DIR 
     "include",
     "common",
-    "io"
+    "io",
+    "/opt/intel/oneapi/vtune/latest/sdk/include/"
 )
 include_directories (${INCLUDE_DIR}) 
 
@@ -45,4 +46,4 @@ add_executable( TEST_tree
     common/common.h
     common/pred_transform.h
 )
-target_link_libraries(TEST_tree cnpy)
+target_link_libraries(TEST_tree cnpy /opt/intel/oneapi/vtune/latest/sdk/lib64/libittnotify.a)
