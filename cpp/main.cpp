@@ -47,8 +47,9 @@ void prepareSmp(float* smpArr) {
 }
 
 void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vector<float> &res) {
-    const int iblock = 64;
+    const int iblock = 50, iblockT = 100;
     const int n = dataDim / iblock;
+    const int nT = 1000 / iblockT;
     
     // exp1 openmp
     // #pragma omp parallel for
@@ -70,9 +71,8 @@ void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vec
     //         res[i] = gbt.predictGBT(data + i * featDim);
     // });
 
-    // 
     // set to physical core number
-    // oneapi::tbb::task_arena arena;
+    // oneapi::tbb::task_arena arena(144);
     // pinning_observer po = pinning_observer(arena)
 
     // arena.execute([&]{
@@ -84,21 +84,77 @@ void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vec
     //     });
     // });
 
-    // 
     // static tbb::affinity_partitioner ap;
     // static tbb::static_partitioner sp;
     // static tbb::simple_partitioner sp;
     // static tbb::auto_partitioner ap;
 
-    tbb::parallel_for(0, n, 1, [&](int i) {
-        // GBTreeModel _gbt = gbt;
-        const int offset = i * iblock;
-        for (int j = 0 ;j < iblock; j++) {
-            res[offset + j] = gbt.predictGBT(data + offset * featDim );
+    // tbb::parallel_for(0, n, 1, [&](int i) {
+    //     // GBTreeModel _gbt = gbt;
+    //     const int offset = i * iblock;
+    //     for (int j = 0 ;j < iblock; j++) {
+    //         // res[offset + j] = gbt.predictGBT(data);
+    //         res[offset + j] = gbt.predictGBT(data + offset * featDim );
+    //     }
+    //     // res[offset] = gbt.predictGBT(data + offset * featDim );
+    // });
+    // // }, ap);
+
+    // tbb::parallel_for(
+    //     tbb::blocked_range<size_t>(0, n), 
+    //     [&](const tbb::blocked_range<size_t>& r){
+        
+    //     for(size_t i = r.begin(); i!=r.end(); i++) {
+    //         const int offset = i * iblock;
+    //         for (int j = 0 ;j < iblock; j++) {
+    //             res[offset + j] = gbt.predictGBT(data + offset * featDim );
+    //         }
+    //     }
+    // });
+
+    // tbb::parallel_for(
+    //     tbb::blocked_range2d<size_t>(0, nT, 0, n), 
+    //     [&](const tbb::blocked_range2d<size_t>& r){
+        
+    //     for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
+    //     for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
+    //     {   
+    //         // printf("i is %d \n", i);
+    //         // printf("j is %d \n", j);
+    //         const int offset = i * iblock, offsetT = j * iblockT;
+    //         for (int k = 0 ;k < iblock; ++ k) {
+    //             for (int kT = 0 ;kT < iblockT; ++ kT) {
+    //             // res[(offset + k) * 1000 + j] = gbt.predictGBT(data + offset * featDim);
+    //                 res[(offset + k) * 1000 + offsetT + kT] = \
+    //                     gbt._trees[offsetT + kT].predictTree(data + offset * featDim);
+    //             }
+    //         }
+    //         // a[i*n+j] = std::sin(i) * std::sin(j);
+    //     }
+    // });
+
+    // 
+    tbb::parallel_for(
+        tbb::blocked_range2d<size_t>(0, nT, 0, n), 
+        [&](const tbb::blocked_range2d<size_t>& r){
+        
+        for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
+        for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
+        {   
+            // printf("i is %d \n", i);
+            // printf("j is %d \n", j);
+            const int offset = i * iblock, offsetT = j * iblockT;
+            for (int kT = 0 ;kT < iblockT; ++ kT) {
+                for (int k = 0 ;k < iblock; ++ k) {
+                // res[(offset + k) * 1000 + j] = gbt.predictGBT(data + offset * featDim);
+                    res[(offset + k) * 1000 + offsetT + kT] = \
+                        gbt._trees[offsetT + kT].predictTree(data + offset * featDim);
+                }
+            }
         }
-        // res[offset] = gbt.predictGBT(data + offset * featDim );
     });
-    // ap);
+
+
 
 }
 
@@ -148,7 +204,8 @@ void test2() {
     int featDim = arrX.shape[1];
     int dataDim = arrX.shape[0];
     std::vector<float> smpX(featDim * dataDim), smpY(featDim * dataDim);
-    std::vector<float> res(featDim * dataDim);
+    // std::vector<float> res(featDim * dataDim);
+    std::vector<float> res(featDim * dataDim * 1000);
     for (int i = 0; i < featDim * dataDim; ++ i) {
         // smpX[i] = loaded_dataX[i] - 0.384;
         smpX[i] = loaded_dataX[i];
