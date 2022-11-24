@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iostream>
 // 
+#include <tbb/tbb.h>
 
 #include "common.h"
 #include "pred_transform.h"
@@ -71,9 +72,10 @@ public:
         }
     }
 
-    void initGroupChildren(int gDep, int gCol) {
+    void initGroupChildren(int gDep, int gCol, bool leaf = false) {
         // int gNumPre = gDep == 0 ? 0 : ((1 << (4*(gDep-1))) - 1) / (16 - 1);
-        int gNumPre = gDep == 0 ? 0 : ((1 << (4 * gDep)) - 1) / (16 - 1);
+        int gNumPre = ((1 << (4 * (gDep+1))) - 1) / (16 - 1);
+        if (leaf) gNumPre = 0;
         int iStart = gNumPre + gCol * gnodeNum;
         for (int i = iStart, iEnd = iStart + gnodeNum; i < iEnd; ++i) {
             _children[i - iStart] = i;
@@ -88,7 +90,7 @@ public:
     inline int32_t nextGroup(int32_t offset) {
         return _children[offset];
     }
-    
+
     inline unsigned short predictGroup(float* smpValg, bool isLeaf = false) {
         nodeStat s;
         cmpFS(smpValg, s);
@@ -139,10 +141,21 @@ private:
 
     inline void cmpFS(float* smpArr, nodeStat& s) {
         // FeatIdx a;
-        SampleGroupT volatile smpVal = _mm512_i32gather_ps(_fidxArr.i, smpArr, 4);
+        __m512 smpVal = _mm512_i32gather_ps(_fidxArr.i, smpArr, 4);
+        s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
+        
+        // FeatVal smpVal;
+        // #pragma ivdep
+        // #pragma vector always
+        // for (int i = 0; i < 16; ++ i) {
+        //     smpVal.vv[i] = smpArr[_fidxArr.ii[i]];
+        // }
+
+        // s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal.v, _CMP_LT_OS) << 1;
+
+        // SampleGroupT volatile smpVal = _mm512_i32gather_ps(_fidxArr.i, smpArr, 4);
         // SampleGroupT volatile smpVal1 = _mm512_i32gather_ps(a.i, smpArr, 4);
         
-        s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
         // auto volatile _s = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
     }
 
@@ -188,6 +201,7 @@ public:
         int gNum = ((1 << (4 * _depthG)) - 1) / (16 - 1);
         _groups.resize(gNum);
 
+        int nIdx = 0;
         for (int i = 0; i < _depthG; ++i) {
             // previous group number
             int gNumPre = i == 0 ? 0 : ((1 << (4 * i)) - 1) / (16 - 1);
@@ -206,7 +220,7 @@ public:
                     int jPre = rPre * gNumCur + j * (1 << r);
                     // traverse current group's row
                     for (int n = 0; n < (1 << r); ++ n) {
-                        int nIdx = nNumPre + jPre + n;
+                        nIdx = nNumPre + jPre + n;
                         _groups[gIdxCur].setNodeData(rPre + n, weight[nIdx], index[nIdx]);
                     }
                 }
@@ -218,19 +232,40 @@ public:
                 if (i != _depthG - 1) {
                     _groups[gIdxCur].initGroupChildren(i, j);
                 }
+                else {
+                    _groups[gIdxCur].initGroupChildren(i, j, true);
+                }
+                // _groups[gIdxCur].initGroupChildren(i, j);
             }
         }
+
+        _leaf.resize(1 << _depthN);
+        for (int n = 0; n < (1 << _depthN); ++ n) {
+            _leaf[n] = (weight[nIdx + n + 1]);
+        }
+
     }
 
-    float predictTree(float* smpArr) {
+    // float predictTree(float* smpArr) {
+    //     int32_t idx = 0;
+    //     for(int i = 0; i < _depthG - 1; ++ i) {
+    //         int offset = _groups[idx].predictGroup(smpArr);
+    //         idx = _groups[idx].nextGroup(offset);
+    //     }
+    //     int offset = _groups[idx].predictGroup(smpArr, true);
+    //     float leafVal = _groups[idx].leafVal(offset);
+    //     return leafVal;
+    // }
+
+    inline float predictTree(float* smpArr) {
         int32_t idx = 0;
-        for(int i = 0; i < _depthG - 1; ++ i) {
+        for(int i = 0; i < _depthG; ++ i) {
             int offset = _groups[idx].predictGroup(smpArr);
             idx = _groups[idx].nextGroup(offset);
         }
-        int offset = _groups[idx].predictGroup(smpArr, true);
-        float leafVal = _groups[idx].leafVal(offset);
-        return leafVal;
+        // int offset = _groups[idx].predictGroup(smpArr, true);
+        // float leafVal = _groups[idx].leafVal(offset);
+        return _leaf[idx];
     }
 
     float testTimePre(float* smpArr){
@@ -255,6 +290,7 @@ public:
 
 private:
     std::vector<NodeGroup> _groups;
+    std::vector<float> _leaf;
     int _depthN;
     int _depthG;
 };
@@ -278,8 +314,16 @@ public:
     }
 
     float predictGBT(float* smpArr) {
-        float res = 0;
+        // float res[1000] = {0, };
+        // tbb::parallel_for(0, _treeNum, 1, [&](int i) {
+        // for(int i = 0; i < _treeNum; ++ i) {
+        //     res[i] = _trees[i]->predictTree(smpArr);
+        // }
+        // });
+
+        float res = 0.f;
         for(int i = 0; i < _treeNum; ++ i) {
+        // for(int i = 0; i < 100; ++ i) {
             res += _trees[i]->predictTree(smpArr);
         }
         return sigmoid(res);

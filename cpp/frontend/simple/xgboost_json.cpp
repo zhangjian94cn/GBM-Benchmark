@@ -45,9 +45,9 @@ void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
             std::vector<float> _weight;
             std::vector<int> _index;
             for (rapidjson::SizeType i = 0; i < weight.Size(); i++) {
-                printf("weight[%d] = %f \n", i, weight[i].GetFloat());
+                // printf("weight[%d] = %f \n", i, weight[i].GetFloat());
                 _weight.push_back(weight[i].GetFloat());
-                printf("indices[%d] = %d \n", i, index[i].GetInt());
+                // printf("indices[%d] = %d \n", i, index[i].GetInt());
                 _index.push_back(index[i].GetInt());
             }
             gbt.pushTree(_weight, _index);

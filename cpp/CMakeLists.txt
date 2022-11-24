@@ -15,9 +15,8 @@ project( TEST )
 SET(CMAKE_C_COMPILER "icc")
 SET(CMAKE_CXX_COMPILER "icpc")
 
-# add_subdirectory(./dmlc-core)
-SET(CMAKE_C_FLAGS  "-xhost -O3")
-SET(CMAKE_CXX_FLAGS  "-xhost -O3")
+SET(CMAKE_C_FLAGS  "-xhost -O3  -fopenmp")
+SET(CMAKE_CXX_FLAGS  "-xhost -O3  -fopenmp")
 
 
 set(INCLUDE_DIR 
@@ -34,6 +33,17 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 add_library(cnpy SHARED "io/cnpy.cpp")
 target_link_libraries(cnpy ${ZLIB_LIBRARIES})
 
+find_package( TBB REQUIRED)
+
+
+
+# find_package(OpenMP)
+# if (OPENMP_FOUND)
+#     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+#     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fopenmp")
+#     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+# endif()
+
 # exe
 add_executable( TEST_tree 
     main.cpp 
@@ -46,4 +56,7 @@ add_executable( TEST_tree
     common/common.h
     common/pred_transform.h
 )
-target_link_libraries(TEST_tree cnpy /opt/intel/oneapi/vtune/latest/sdk/lib64/libittnotify.a)
+target_link_libraries(TEST_tree 
+cnpy 
+TBB::tbb
+/opt/intel/oneapi/vtune/latest/sdk/lib64/libittnotify.a)
