@@ -66,7 +66,7 @@ void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vec
     //     }
     // }
 
-    // exp3 tbb
+    // exp3 tbb, RESULT CORRECT
     // tbb::parallel_for(0, dataDim, 1, [&](int i) {
     //         res[i] = gbt.predictGBT(data + i * featDim);
     // });
@@ -94,7 +94,7 @@ void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vec
     //     const int offset = i * iblock;
     //     for (int j = 0 ;j < iblock; j++) {
     //         // res[offset + j] = gbt.predictGBT(data);
-    //         res[offset + j] = gbt.predictGBT(data + offset * featDim );
+    //         res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
     //     }
     //     // res[offset] = gbt.predictGBT(data + offset * featDim );
     // });
@@ -154,8 +154,6 @@ void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vec
         }
     });
 
-
-
 }
 
 // 
@@ -187,7 +185,11 @@ void test2() {
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_128.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_4_16.json";
-    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
+    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_10_8_512.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_8_256.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_10_8_256.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_dep4_8.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep4_8.json";
     std::string dataPathX = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_x_test.npy";
@@ -207,7 +209,6 @@ void test2() {
     // std::vector<float> res(featDim * dataDim);
     std::vector<float> res(featDim * dataDim * 1000);
     for (int i = 0; i < featDim * dataDim; ++ i) {
-        // smpX[i] = loaded_dataX[i] - 0.384;
         smpX[i] = loaded_dataX[i];
         // smpY[i] = loaded_dataY[i];
     } 

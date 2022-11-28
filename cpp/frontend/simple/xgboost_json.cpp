@@ -29,6 +29,7 @@ void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
         di.Parse<rapidjson::kParseNanAndInfFlag>(sklearn_info.c_str(), sklearn_info.length());
         treeInfo.tree_num = di["n_estimators"].GetInt();
         treeInfo.tree_depth = di["max_depth"].GetInt();
+        // treeInfo.tree_depth = 8;
     }
 
     gbt.setTreeDepth(treeInfo.tree_depth);
@@ -44,6 +45,8 @@ void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
             assert(index.IsArray());
             std::vector<float> _weight;
             std::vector<int> _index;
+
+            // printf("tree %d : node number is %d \n", i, weight.Size());
             for (rapidjson::SizeType i = 0; i < weight.Size(); i++) {
                 // printf("weight[%d] = %f \n", i, weight[i].GetFloat());
                 _weight.push_back(weight[i].GetFloat());
