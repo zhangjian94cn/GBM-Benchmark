@@ -94,7 +94,7 @@ void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vec
         // GBTreeModel _gbt = gbt;
         const int offset = i * iblock;
         for (int j = 0 ;j < iblock; j++) {
-            res[offset + j] = gbt.predictGBT(data + offset * featDim );
+            res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
         }
         // res[offset] = gbt.predictGBT(data + offset * featDim );
     });
