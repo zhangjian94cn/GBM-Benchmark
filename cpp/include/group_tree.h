@@ -315,15 +315,15 @@ private:
 
 class GBTreeModel {
 public:
-    GBTreeModel() : _treeNum(0) {
-        // for (int i = 0; i < _treeNum; ++ i) {
-        //     _trees.push_back(RegTree());
-        // }
-    };
+    GBTreeModel() : _treeNum(0) {};
     
     void setTreeDepth(int depth) {
         _depth = depth;
     }
+    
+    int getTreeNum() { 
+        return _treeNum; 
+    };
 
     void pushTree(const std::vector<float>& weight, const std::vector<int>& index) {
         ++ _treeNum;
@@ -340,33 +340,16 @@ public:
         // });
 
         float res = 0.f;
-        // for(int i = 0; i < _treeNum; i += 2) {
         for(int i = 0; i < _treeNum; ++ i) {
-        // for(int i = 0; i < 100; ++ i) {
-            // res += (_trees[i].predictTree(smpArr) + 
-            //         _trees[i+1].predictTree(smpArr));
             res += _trees[i].predictTree(smpArr);
         }
-        // return res;
         return sigmoid(res);
     }
 
-    float testTimePre(float* smpArr) {
-        return _trees[0].testTime(smpArr);
-        // return _trees[0]->testTime(smpArr);
-    }
+    float testTimePre(float* smpArr); 
+    float testTime(float* smpArr); 
 
-    float testTime(float* smpArr) {
-        float res = 0.f;
-        auto start = std::chrono::system_clock::now();
-        for (int i = 0; i < Common::cycleNum; ++ i){
-            res = _trees[0].predictTree(smpArr);
-            // res = _trees[0]->predictTree(smpArr);
-        }
-        auto end = std::chrono::system_clock::now();
-        std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
-        return res;
-    }
+    
 
     std::vector<RegTree> _trees;
 
