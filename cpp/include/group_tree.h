@@ -349,8 +349,6 @@ public:
     float testTimePre(float* smpArr); 
     float testTime(float* smpArr); 
 
-    
-
     std::vector<RegTree> _trees;
 
 private:

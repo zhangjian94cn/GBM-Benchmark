@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cmath>
 
 inline float sigmoid(const float x) {
