@@ -49,12 +49,12 @@ void prepareSmp(float* smpArr) {
 void pred_core(
     GBTreeModel &gbt, 
     float* data, 
-    int dataDim, 
-    int treeDim, 
-    int featDim, 
+    const int dataDim, 
+    const int treeDim, 
+    const int featDim, 
     std::vector<float> &res) {
     
-    const int iblockD = 50, iblockT = 100;
+    const int iblockD = 50, iblockT = 10;
     const int nD = dataDim / iblockD;
     const int nT = treeDim / iblockT;
     
@@ -97,15 +97,15 @@ void pred_core(
     // static tbb::simple_partitioner sp;
     // static tbb::auto_partitioner ap;
 
-    tbb::parallel_for(0, nD, 1, [&](int i) {
-        // GBTreeModel _gbt = gbt;
-        const int offset = i * iblockD;
-        for (int j = 0 ;j < iblockD; j++) {
-            // res[offset + j] = gbt.predictGBT(data);
-            res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
-        }
-        // res[offset] = gbt.predictGBT(data + offset * featDim );
-    });
+    // tbb::parallel_for(0, nD, 1, [&](int i) {
+    //     // GBTreeModel _gbt = gbt;
+    //     const int offset = i * iblockD;
+    //     for (int j = 0 ;j < iblockD; j++) {
+    //         // res[offset + j] = gbt.predictGBT(data);
+    //         res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
+    //     }
+    //     // res[offset] = gbt.predictGBT(data + offset * featDim );
+    // });
     // // }, ap);
 
     // // exp6 1D blocked_range parallel
@@ -122,7 +122,6 @@ void pred_core(
     // });
 
     // // exp7 2D block range parallel
-    // // std::vector<float> _res(dataDim * treeDim);
     // tbb::parallel_for(
     //     tbb::blocked_range2d<size_t>(0, nT, 0, nD), 
     //     [&](const tbb::blocked_range2d<size_t>& r){
@@ -149,27 +148,39 @@ void pred_core(
     // });
     
 
-    // // 
-    // std::vector<float> _res(featDim * dataDim * treeDim);
-    // tbb::parallel_for(
-    //     tbb::blocked_range2d<size_t>(0, nT, 0, nD), 
-    //     [&](const tbb::blocked_range2d<size_t>& r){
+    // exp 8 2D blocked parallel (tree outer, data inner) and use memory affinity
+    static tbb::affinity_partitioner ap;
+    tbb::parallel_for(
+        tbb::blocked_range2d<size_t>(0, nT, 0, nD), 
+        [&](const tbb::blocked_range2d<size_t>& r){
         
-    //     for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
-    //     for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
-    //     {   
-    //         // printf("i is %d \n", i);
-    //         // printf("j is %d \n", j);
-    //         const int offset = i * iblockD, offsetT = j * iblockT;
-    //         for (int kT = 0 ;kT < iblockT; ++ kT) {
-    //             for (int k = 0 ;k < iblockD; ++ k) {
-    //             // res[(offset + k) * 1000 + j] = gbt.predictGBT(data + offset * featDim);
-    //                 res[(offset + k) * 1000 + offsetT + kT] = \
-    //                     gbt._trees[offsetT + kT].predictTree(data + offset * featDim);
-    //             }
-    //         }
-    //     }
+        for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
+        for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
+        {   
+            // printf("i is %d \n", i);
+            // printf("j is %d \n", j);
+            const int offsetD = i * iblockD, offsetT = j * iblockT;
+            for (int kT = 0 ;kT < iblockT; ++ kT) {
+                for (int kD = 0 ;kD < iblockD; ++ kD) {
+                    // res[(offsetD + kD) * 1000 + j] = gbt.predictGBT(data + offsetD * featDim);
+                    // res[(offsetD + kD) * treeDim + offsetT + kT] = \
+                    //     gbt._trees[offsetT + kT].predictTree(data + offsetD * featDim);
+                    res[offsetD + kD] += \
+                        gbt._trees[offsetT + kT].predictTree(data + (offsetD + kD) * featDim);
+                }
+            }
+        }
     // });
+    }, ap);
+
+    tbb::parallel_for(0, nD, 1, [&](int i) {
+        const int offset = i * iblockD;
+        for (int j = 0 ;j < iblockD; j++) {
+            res[offset + j] = sigmoid(res[offset + j]);
+        }
+    });
+    // }, ap);
+
 
 }
 
@@ -202,8 +213,8 @@ void test2() {
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_128.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_4_16.json";
-    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
-    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_10_8_512.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
+    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_10_8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256.json";
