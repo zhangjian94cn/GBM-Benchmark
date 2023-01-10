@@ -97,7 +97,8 @@ public:
         nodeStat s;
         // cmpFS(smpValg, s);
         
-        __m512 smpVal = _mm512_i32gather_ps(_fidxArr.i, smpValg, 4);
+        // __m512 smpVal = _mm512_i32gather_ps(_fidxArr.i, smpValg, 4);
+        __m512 smpVal = _mm512_permutexvar_ps(_fidxArr.i, _mm512_load_ps(smpValg));
         s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
         uint8_t _offset = Common::lookup[s.mm[0]];
         return (((1 << _offset) & s.mm[1]) != 0) + _offset * 2;
@@ -303,11 +304,11 @@ public:
 
     void loadModel() {}
 
-  const std::vector<NodeGroup>& GetGroups() const { return _groups; }
+  const std::vector<NodeGroup, tbb::tbb_allocator<NodeGroup>>& GetGroups() const { return _groups; }
 
 private:
-    std::vector<NodeGroup> _groups;
-    std::vector<float> _leaf;
+    std::vector<NodeGroup, tbb::tbb_allocator<NodeGroup>> _groups;
+    std::vector<float, tbb::tbb_allocator<float>> _leaf;
     int _depthN;
     int _depthG;
 };
@@ -349,7 +350,7 @@ public:
     float testTimePre(float* smpArr); 
     float testTime(float* smpArr); 
 
-    std::vector<RegTree> _trees;
+    std::vector<RegTree, tbb::tbb_allocator<RegTree>> _trees;
 
 private:
     // GBTreeModelParam param;

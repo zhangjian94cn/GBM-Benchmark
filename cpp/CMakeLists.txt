@@ -21,6 +21,10 @@ SET(CMAKE_CXX_COMPILER "icpc")
 SET(CMAKE_C_FLAGS  "-xhost -O3 -fopenmp")
 SET(CMAKE_CXX_FLAGS  "-xhost -O3 -fopenmp")
 
+# SET(CMAKE_C_FLAGS  "-O3 -xCORE-AVX512 -qopt-zmm-usage=high")
+# SET(CMAKE_CXX_FLAGS  "-O3 -xCORE-AVX512 -qopt-zmm-usage=high")
+
+
 # SET(CMAKE_C_FLAGS  "-fast  -fopenmp")
 # SET(CMAKE_CXX_FLAGS  "-fast  -fopenmp")
 

@@ -1,3 +1,5 @@
+#include<algorithm>
+
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
 
@@ -51,7 +53,7 @@ void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
                 // printf("weight[%d] = %f \n", i, weight[i].GetFloat());
                 _weight.push_back(weight[i].GetFloat());
                 // printf("indices[%d] = %d \n", i, index[i].GetInt());
-                _index.push_back(index[i].GetInt());
+                _index.push_back(std::min(index[i].GetInt(), 15));
             }
             gbt.pushTree(_weight, _index);
         }

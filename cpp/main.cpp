@@ -170,8 +170,8 @@ void pred_core(
                 }
             }
         }
-    // });
-    }, ap);
+    });
+    // }, ap);
 
     tbb::parallel_for(0, nD, 1, [&](int i) {
         const int offset = i * iblockD;
@@ -222,7 +222,7 @@ void test2() {
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep4_8.json";
     std::string dataPathX = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_x_test.npy";
     std::string dataPathY = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_y_test.npy";
-    
+
     GBTreeModel gbt = GBTreeModel();
     LoadXGBoostJSONModel(modelPath.c_str(), gbt);
 
