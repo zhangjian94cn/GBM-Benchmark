@@ -103,6 +103,24 @@ public:
         return (((1 << _offset) & s.mm[1]) != 0) + _offset * 2;
     }
 
+    inline unsigned short predictGroupByIF(const float* smpValg) {
+        
+        unsigned short rowIdx = 0, nodeIdx = 0;
+        for(int i = 0; i < 4; ++ i) {
+            nodeIdx = i == 0 ? 0 : (1 << i-1) + rowIdx;
+            // Node n = _tree[idx];
+            float fval = _fvalArr.vv[nodeIdx];
+            float sVal = smpValg[_fidxArr.ii[nodeIdx]];
+            //std::cout << sVal << " " << nVal << std::endl;
+            if(sVal < fval) {
+                rowIdx = rowIdx * 2;
+            } else {
+                rowIdx = rowIdx * 2 + 1;
+            }
+        }
+        return rowIdx;
+    }
+
     float testTime_core(float* smpArr){
         // int Common::cycleNum = 1000000000;
         float volatile res = 0.f;
@@ -269,6 +287,7 @@ public:
         // for(int i = 0; i < 1; ++ i) {
         // prefetch(&_groups[0]);
         for(int i = 0; i < _depthG; ++ i) {
+            // offset = _groups[idx].predictGroupByIF(smpArr);
             offset = _groups[idx].predictGroup(smpArr);
             idx    = _groups[idx].nextGroup(offset);
             // offset = _groups[0].predictGroup(smpArr);
