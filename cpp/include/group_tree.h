@@ -20,19 +20,21 @@ static const int gnodeNum = sizeof(__m512) / sizeof(int);
 static const int smpLen = 16;
 static const int gInnerDep = 4;
 
+#define prefetch(x) __builtin_prefetch(x)
+
 using SampleGroupT = __m512;
 
-union FeatIdx {
+union FeatIdxType {
     __m512i i;
     int32_t ii[gnodeNum];
 };
 
-union FeatVal {
+union FeatValType {
     __m512  v;
     float vv[gnodeNum];
 };
 
-union nodeStat {
+union nodeStatType {
     __mmask16  m;
     uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
 };
@@ -91,10 +93,32 @@ public:
         return _children[offset];
     }
 
-    inline unsigned short predictGroup(float* smpValg, bool isLeaf = false) {
+    inline unsigned short predictGroup(const float* smpValg) {
         nodeStat s;
-        cmpFS(smpValg, s);
-        return calcOffset(s, isLeaf);
+        // cmpFS(smpValg, s);
+        
+        __m512 smpVal = _mm512_i32gather_ps(_fidxArr.i, smpValg, 4);
+        s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
+        uint8_t _offset = Common::lookup[s.mm[0]];
+        return (((1 << _offset) & s.mm[1]) != 0) + _offset * 2;
+    }
+
+    inline unsigned short predictGroupByIF(const float* smpValg) {
+        
+        unsigned short rowIdx = 0, nodeIdx = 0;
+        for(int i = 0; i < 4; ++ i) {
+            nodeIdx = i == 0 ? 0 : (1 << i-1) + rowIdx;
+            // Node n = _tree[idx];
+            float fval = _fvalArr.vv[nodeIdx];
+            float sVal = smpValg[_fidxArr.ii[nodeIdx]];
+            //std::cout << sVal << " " << nVal << std::endl;
+            if(sVal < fval) {
+                rowIdx = rowIdx * 2;
+            } else {
+                rowIdx = rowIdx * 2 + 1;
+            }
+        }
+        return rowIdx;
     }
 
     float testTime_core(float* smpArr){
@@ -139,17 +163,18 @@ private:
 
 
 
-    inline void cmpFS(float* smpArr, nodeStat& s) {
+    inline void cmpFS(const float* smpArr, nodeStat& s) {
         // FeatIdx a;
+        // __m512 smpVal;
         __m512 smpVal = _mm512_i32gather_ps(_fidxArr.i, smpArr, 4);
         s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
         
-        // FeatVal smpVal;
         // #pragma ivdep
         // #pragma vector always
         // for (int i = 0; i < 16; ++ i) {
-        //     smpVal.vv[i] = smpArr[_fidxArr.ii[i]];
+        //     s.mm[i] = _fvalArr.vv[i] < smpArr[_fidxArr.ii[i]];
         // }
+        // s.m = s.m << 1;
 
         // s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal.v, _CMP_LT_OS) << 1;
 
@@ -161,7 +186,7 @@ private:
 
     inline unsigned short calcOffset(nodeStat& s, bool isLeaf = false) {
         unsigned short _offset = Common::lookup[s.mm[0]];
-        if (isLeaf) return _offset;
+        // if (isLeaf) return _offset;
         return (((1 << _offset) & s.mm[1]) != 0) + _offset * 2;
     }
 
@@ -257,14 +282,25 @@ public:
     //     return leafVal;
     // }
 
-    inline float predictTree(float* smpArr) {
-        int32_t idx = 0;
+    inline float predictTree(const float* smpArr) {
+        int32_t idx = 0, offset = 0;
+        // for(int i = 0; i < 1; ++ i) {
+        // prefetch(&_groups[0]);
         for(int i = 0; i < _depthG; ++ i) {
-            int offset = _groups[idx].predictGroup(smpArr);
-            idx = _groups[idx].nextGroup(offset);
+            // offset = _groups[idx].predictGroupByIF(smpArr);
+            offset = _groups[idx].predictGroup(smpArr);
+            idx    = _groups[idx].nextGroup(offset);
+            // offset = _groups[0].predictGroup(smpArr);
+            // idx    = _groups[0].nextGroup(offset);
         }
+
+        // offset = _groups[idx].predictGroup(smpArr);
+        // idx    = _groups[idx].nextGroup(offset);
+        
         // int offset = _groups[idx].predictGroup(smpArr, true);
         // float leafVal = _groups[idx].leafVal(offset);
+        
+        // return 0.0f;
         return _leaf[idx];
     }
 
@@ -298,22 +334,23 @@ private:
 
 class GBTreeModel {
 public:
-    GBTreeModel() : _treeNum(0) {
-        // for (int i = 0; i < _treeNum; ++ i) {
-        //     _trees.push_back(RegTree());
-        // }
-    };
+    GBTreeModel() : _treeNum(0) {};
     
     void setTreeDepth(int depth) {
         _depth = depth;
     }
+    
+    int getTreeNum() { 
+        return _treeNum; 
+    };
 
     void pushTree(const std::vector<float>& weight, const std::vector<int>& index) {
         ++ _treeNum;
-        _trees.push_back(new RegTree(_depth, weight, index));
+        // _trees.push_back(new RegTree(_depth, weight, index));
+        _trees.push_back(RegTree(_depth, weight, index));
     }
 
-    float predictGBT(float* smpArr) {
+    float predictGBT(const float* smpArr) {
         // float res[1000] = {0, };
         // tbb::parallel_for(0, _treeNum, 1, [&](int i) {
         // for(int i = 0; i < _treeNum; ++ i) {
@@ -323,30 +360,20 @@ public:
 
         float res = 0.f;
         for(int i = 0; i < _treeNum; ++ i) {
-        // for(int i = 0; i < 100; ++ i) {
-            res += _trees[i]->predictTree(smpArr);
+            res += _trees[i].predictTree(smpArr);
         }
         return sigmoid(res);
     }
 
-    float testTimePre(float* smpArr) {
-        return _trees[0]->testTime(smpArr);
-    }
+    float testTimePre(float* smpArr); 
+    float testTime(float* smpArr); 
 
-    float testTime(float* smpArr) {
-        float res = 0.f;
-        auto start = std::chrono::system_clock::now();
-        for (int i = 0; i < Common::cycleNum; ++ i){
-            res = _trees[0]->predictTree(smpArr);
-        }
-        auto end = std::chrono::system_clock::now();
-        std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;
-        return res;
-    }
+    std::vector<RegTree> _trees;
 
 private:
     // GBTreeModelParam param;
-    std::vector<RegTree*> _trees;
+    // std::vector<RegTree> _trees;
+    // std::vector<RegTree*> _trees;
     int _treeNum;
     int _depth;
 };

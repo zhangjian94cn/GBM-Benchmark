@@ -41,64 +41,146 @@ void prepareSmp(float* smpArr) {
     std::uniform_real_distribution<float> urdSmp(0, 1);
 
     // init sample
-    for (int i =0; i < smpLen; ++i){
+    for (int i =0; i < smpLen; ++i) {
         smpArr[i] = urdSmp(e);
     }
 }
 
-void pred_core(GBTreeModel &gbt, float* data, int dataDim, int featDim, std::vector<float> &res) {
-    const int iblock = 64;
-    const int n = dataDim / iblock;
+void pred_core(
+    GBTreeModel &gbt, 
+    float* data, 
+    const int dataDim, 
+    const int treeDim, 
+    const int featDim, 
+    std::vector<float> &res) {
     
-    // exp1 openmp
+    const int iblockD = 50, iblockT = 10;
+    const int nD = dataDim / iblockD;
+    const int nT = treeDim / iblockT;
+    
+    // // exp1 openmp
     // #pragma omp parallel for
     // for (int i = 0; i < dataDim; ++ i) {
     //     res[i] = gbt.predictGBT(data + i * featDim);
     // }
 
-    // exp2 blocked openmp
+    // // exp2 blocked openmp
     // #pragma omp parallel for
-    // for (int i = 0; i < n; i++) {
-    //     const int offset = i*iblock;
-    //     for (int j = 0 ;j < iblock; j++) {
+    // for (int i = 0; i < nD; i++) {
+    //     const int offset = i*iblockD;
+    //     for (int j = 0 ;j < iblockD; j++) {
     //         res[offset + j] = gbt.predictGBT(data + offset * featDim );
     //     }
     // }
 
-    // exp3 tbb
+    // // exp3 tbb, RESULT CORRECT
     // tbb::parallel_for(0, dataDim, 1, [&](int i) {
     //         res[i] = gbt.predictGBT(data + i * featDim);
     // });
 
-    // 
-    // set to physical core number
-    // oneapi::tbb::task_arena arena;
+    // // exp4 set to physical core number
+    // oneapi::tbb::task_arena arena(144);
     // pinning_observer po = pinning_observer(arena)
 
     // arena.execute([&]{
-    //     tbb::parallel_for(0, n, 1, [&](int i) {
-    //         const int offset = i * iblock;
-    //         for (int j = 0 ;j < iblock; j++) {
+    //     tbb::parallel_for(0, nD, 1, [&](int i) {
+    //         const int offset = i * iblockD;
+    //         for (int j = 0 ;j < iblockD; j++) {
     //             res[offset + j] = gbt.predictGBT(data + offset * featDim );
     //         }
     //     });
     // });
 
-    // 
+    // // exp5 memory affinity
     // static tbb::affinity_partitioner ap;
     // static tbb::static_partitioner sp;
     // static tbb::simple_partitioner sp;
     // static tbb::auto_partitioner ap;
 
-    tbb::parallel_for(0, n, 1, [&](int i) {
-        // GBTreeModel _gbt = gbt;
-        const int offset = i * iblock;
-        for (int j = 0 ;j < iblock; j++) {
-            res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
+    // tbb::parallel_for(0, nD, 1, [&](int i) {
+    //     // GBTreeModel _gbt = gbt;
+    //     const int offset = i * iblockD;
+    //     for (int j = 0 ;j < iblockD; j++) {
+    //         // res[offset + j] = gbt.predictGBT(data);
+    //         res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
+    //     }
+    //     // res[offset] = gbt.predictGBT(data + offset * featDim );
+    // });
+    // // }, ap);
+
+    // // exp6 1D blocked_range parallel
+    // tbb::parallel_for(
+    //     tbb::blocked_range<size_t>(0, nD), 
+    //     [&](const tbb::blocked_range<size_t>& r){
+        
+    //     for(size_t i = r.begin(); i!=r.end(); i++) {
+    //         const int offset = i * iblockD;
+    //         for (int j = 0 ;j < iblockD; j++) {
+    //             res[offset + j] = gbt.predictGBT(data + (offset + j) * featDim );
+    //         }
+    //     }
+    // });
+
+    // // exp7 2D block range parallel
+    // tbb::parallel_for(
+    //     tbb::blocked_range2d<size_t>(0, nT, 0, nD), 
+    //     [&](const tbb::blocked_range2d<size_t>& r){
+        
+    //     for(size_t i = r.cols().begin(); i != r.cols().end(); i++) {
+    //         for(size_t j = r.rows().begin(); j != r.rows().end(); j++) {
+    //             // printf("i is %d \n", i);
+    //             // printf("j is %d \n", j);
+    //             const int offsetD = i * iblockD, offsetT = j * iblockT;
+    //             for (int kD = 0 ;kD < iblockD; ++ kD) {
+    //                 for (int kT = 0 ;kT < iblockT; ++ kT) {
+    //                 // res[(offsetD + kD) * treeDim + j] = gbt.predictGBT(data + offsetD * featDim);
+    //                     // _res[(offsetD + kD) * treeDim + offsetT + kT] = \
+    //                     //     gbt._trees[offsetT + kT].predictTree(data + (offsetD + kD) * featDim);
+    //                     res[offsetD + kD] += \
+    //                         gbt._trees[offsetT + kT].predictTree(data + (offsetD + kD) * featDim);
+    //                 }
+    //             }
+    //             // a[i*nD+j] = std::sin(i) * std::sin(j);
+    //             // res[j] += _res[treeDim * j + i];
+    //             // res[i] = sigmoid(res[i]);
+    //         }
+    //     }
+    // });
+    
+
+    // exp 8 2D blocked parallel (tree outer, data inner) and use memory affinity
+    static tbb::affinity_partitioner ap;
+    tbb::parallel_for(
+        tbb::blocked_range2d<size_t>(0, nT, 0, nD), 
+        [&](const tbb::blocked_range2d<size_t>& r){
+        
+        for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
+        for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
+        {   
+            // printf("i is %d \n", i);
+            // printf("j is %d \n", j);
+            const int offsetD = i * iblockD, offsetT = j * iblockT;
+            for (int kT = 0 ;kT < iblockT; ++ kT) {
+                for (int kD = 0 ;kD < iblockD; ++ kD) {
+                    // res[(offsetD + kD) * 1000 + j] = gbt.predictGBT(data + offsetD * featDim);
+                    // res[(offsetD + kD) * treeDim + offsetT + kT] = \
+                    //     gbt._trees[offsetT + kT].predictTree(data + offsetD * featDim);
+                    res[offsetD + kD] += \
+                        gbt._trees[offsetT + kT].predictTree(data + (offsetD + kD) * featDim);
+                }
+            }
         }
-        // res[offset] = gbt.predictGBT(data + offset * featDim );
+    // });
+    }, ap);
+
+    tbb::parallel_for(0, nD, 1, [&](int i) {
+        const int offset = i * iblockD;
+        for (int j = 0 ;j < iblockD; j++) {
+            res[offset + j] = sigmoid(res[offset + j]);
+        }
     });
-    // ap);
+    // }, ap);
+
 
 }
 
@@ -131,7 +213,11 @@ void test2() {
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_128.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_4_16.json";
-    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
+    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_8_256.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_10_8_256.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_dep4_8.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep4_8.json";
     std::string dataPathX = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_x_test.npy";
@@ -147,20 +233,21 @@ void test2() {
 
     int featDim = arrX.shape[1];
     int dataDim = arrX.shape[0];
+    int treeDim = gbt.getTreeNum();
     std::vector<float> smpX(featDim * dataDim), smpY(featDim * dataDim);
-    std::vector<float> res(featDim * dataDim);
+    // std::vector<float> res(dataDim);
+    // std::vector<float> res(dataDim * treeDim);
+    std::vector<float> res(dataDim);
     for (int i = 0; i < featDim * dataDim; ++ i) {
-        // smpX[i] = loaded_dataX[i] - 0.384;
         smpX[i] = loaded_dataX[i];
         // smpY[i] = loaded_dataY[i];
     } 
     // printf("here \n");
 
-
     auto start = std::chrono::system_clock::now();
     // __itt_task_begin(domain, __itt_null, __itt_null, handle_main);
     for (int k = 0; k < 100; ++ k) {
-        pred_core(gbt, smpX.data(), dataDim, featDim, res);
+        pred_core(gbt, smpX.data(), dataDim, treeDim, featDim, res);
         // pred_core(gbt, smpX.data() + featDim * dataDim / 2, dataDim / 2, featDim, res);
     }
     // pred_core(gbt, smpX.data(), dataDim, featDim, res);
