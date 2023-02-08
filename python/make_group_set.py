@@ -6,7 +6,7 @@ import sys
 import json
 import xgboost as xgb
 
-from analyse_tree import get_subtree, make_group_set
+from analyse_tree import get_subtrees, make_group_set
 
 ROOT_PATH = Path(__file__).absolute()
 
@@ -42,9 +42,6 @@ def main():
     # 0. model training
     # model_path = "../xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json"
     model_path = "../xgb-higgs-model-1_6_1-ntrees_1k.json"
-    # model_path = "../xgb-higgs-model-1_6_1-ntrees_1k_4_16.json"
-
-    
 
     if os.path.exists(model_path):
         booster_native = load_model('xgb', model_path)
@@ -52,23 +49,16 @@ def main():
     else:
         print("model does not exist")
 
-    # 
+    # dump trees
     trees = booster_native.get_dump(dump_format="json")
     
-    subtrees = []
-    for tree in trees:
-        subtrees.append(get_subtree(json.loads(tree), 4))
+    # load sub_trees
+    sub_trees = []
+    for tree in trees[0:10]:
+        sub_trees.append(get_subtrees(json.loads(tree), 8, 3))
 
-    make_group_set(subtrees)
-    # 
-    # print(subtrees)
-    # visualization.distribution(booster_native)
-
-    # if 0:
-        # visualization.distribution(booster_native)
-        # visualization.visualize(booster_native, args.hist_path)
-        # visualization.plot_tree(booster_native)
-
+    # make node share
+    make_group_set(sub_trees, 0)
 
 
 if __name__ == '__main__':

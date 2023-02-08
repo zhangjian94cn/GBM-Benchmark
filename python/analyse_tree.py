@@ -10,7 +10,7 @@ feature_list = ['f0',  'f1',  'f2',  'f3',  'f4',  'f5',  'f6',  'f7',  'f8',  '
                 'f20', 'f21', 'f22', 'f23', 'f24', 'f25', 'f26', 'f27']
 
 
-def get_subtree(root, n):
+def get_subtrees(root, layer_skip, layer_share):
 
     subtrees = []
     queue = deque([root])
@@ -18,8 +18,9 @@ def get_subtree(root, n):
     while queue:
         node = queue.popleft()
 
+        # if node['depth'] % 3 == 0:
         # if node['depth'] % 8 == 0:
-        if node['depth'] % n == 0:
+        if node['depth'] % layer_skip == 0:
             subtrees.append(node)
 
         for child in node['children']:
@@ -28,8 +29,8 @@ def get_subtree(root, n):
 
     result = []
     for subtree in subtrees:
-        result.append(get_subfeat(subtree, 4))
-        # result.append(get_subfeat(subtree, 3))
+        # result.append(get_subfeat(subtree, 4))
+        result.append(get_subfeat(subtree, layer_share))
 
     return result
 
@@ -90,31 +91,42 @@ def calc_feat_groups(groups, group_set = []):
 
 
 
-def calc_feat_groups_1(groups, group_set = []):
+def calc_feat_set(groups, groups_tid, set_grp = [], set_gid = []):
 
     raw_num = len(groups)
     # 
     # cur_set = set(groups[0])
     cur_set = set(groups[random.randint(0, raw_num-1)])
+    cur_gid = []
 
     while len(cur_set) <= 16:
         groups_sorted = sorted(groups, \
             key=lambda x:(cur_set.intersection(x), -len(x)), reverse=True)
-        # groups_sorted = sorted(groups, \
-        #     key=lambda x:(-len(x), cur_set.intersection(x)), reverse=True)
         if len(cur_set.union(set(groups_sorted[0]))) > 16:
             break
         else:
             cur_set = cur_set.union(set(groups_sorted[0]))
-        groups = [x for x in groups if not set(x).issubset(cur_set)]
-    
+
+        grp_remaining = []
+        grp_tid_remaining = []
+        for idx, group in enumerate(groups):
+            if not set(group).issubset(cur_set):
+                grp_remaining.append(group)
+                grp_tid_remaining.append(groups_tid[idx])
+            else:
+                cur_gid.append(groups_tid[idx])
+        
+        groups = grp_remaining
+        groups_tid = grp_tid_remaining
+
         if not any(groups):
             break
 
     print(f'group sharing number is {raw_num - len(groups)}')
-    group_set.append(cur_set)
+    set_grp.append(cur_set)
+    set_gid.append(cur_gid)
 
-    return groups
+    return groups, groups_tid
 
 def plot_groups(feat_groups_dict):
 
@@ -137,25 +149,28 @@ def plot_groups(feat_groups_dict):
     plt.close()
 
 
-def flat_group(trees):
+def flat_group(trees, trees_off):
 
-    result = []
-    for tree in trees:
+    groups = []
+    groups_tid = []
+    for idx, tree in enumerate(trees):
         for group in tree:
-            # result.append(list(group))
-            result.append(list(set(group)))
+            # remove duplicated element in group
+            groups.append(list(set(group)))
+            # groups.append(list(group))
+            groups_tid.append(idx + trees_off)
         
-    return result
+    return groups, groups_tid
 
-def make_group_set(trees):
-    groups = flat_group(trees)
-    group_set = []
+def make_group_set(trees, trees_off):
+    groups, groups_tid = flat_group(trees, trees_off)
+    feat_set = []
+    gid_set  = []
     while 1:
-        # groups = calc_feat_groups(groups, group_set)
-        groups = calc_feat_groups_1(groups, group_set)
+        groups = calc_feat_set(groups, groups_tid, feat_set, gid_set)
         if not any(groups):
             break
     
-    print(len(flat_group(trees))/len(group_set))
+    print(len(flat_group(trees))/len(feat_set))
 
     pass
