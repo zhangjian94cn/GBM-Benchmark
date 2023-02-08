@@ -12,27 +12,25 @@ feature_list = ['f0',  'f1',  'f2',  'f3',  'f4',  'f5',  'f6',  'f7',  'f8',  '
 
 def get_subtrees(root, layer_skip, layer_share):
 
-    subtrees = []
+    sub_roots = []
     queue = deque([root])
 
     while queue:
         node = queue.popleft()
 
-        # if node['depth'] % 3 == 0:
-        # if node['depth'] % 8 == 0:
         if node['depth'] % layer_skip == 0:
-            subtrees.append(node)
+            sub_roots.append(node)
 
         for child in node['children']:
             if 'leaf' not in child.keys():
                 queue.append(child)
 
-    result = []
-    for subtree in subtrees:
-        # result.append(get_subfeat(subtree, 4))
-        result.append(get_subfeat(subtree, layer_share))
+    sub_nodes = []
+    for sub_root in sub_roots:
+        # sub_nodes.append(get_subfeat(sub_root, 4))
+        sub_nodes.append(get_subfeat(sub_root, layer_share))
 
-    return result
+    return sub_roots, sub_nodes
 
 
 def get_subfeat(root, n):
@@ -140,7 +138,7 @@ def plot_groups(feat_groups_dict):
     # plt.xlabel('group length', fontsize=10)
     # plt.ylabel('group number', fontsize=10)
 
-    plt.xlabel('feature index', fontsize=10)
+    plt.xlabel('feature index',  fontsize=10)
     plt.ylabel('feature number', fontsize=10)
     # plt.ylabel('group number', fontsize=10)
 
@@ -164,13 +162,15 @@ def flat_group(trees, trees_off):
 
 def make_group_set(trees, trees_off):
     groups, groups_tid = flat_group(trees, trees_off)
+    groups_num = len(groups)
+
     feat_set = []
     gid_set  = []
     while 1:
-        groups = calc_feat_set(groups, groups_tid, feat_set, gid_set)
+        groups, groups_tid = calc_feat_set(groups, groups_tid, feat_set, gid_set)
         if not any(groups):
             break
     
-    print(len(flat_group(trees))/len(feat_set))
+    print(groups_num/len(feat_set))
 
-    pass
+    return feat_set, gid_set

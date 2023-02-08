@@ -5,8 +5,11 @@ from pathlib import Path
 import sys
 import json
 import xgboost as xgb
+import math
 
 from analyse_tree import get_subtrees, make_group_set
+from save_group_model import convert_tree_agg
+
 
 ROOT_PATH = Path(__file__).absolute()
 
@@ -53,12 +56,27 @@ def main():
     trees = booster_native.get_dump(dump_format="json")
     
     # load sub_trees
-    sub_trees = []
-    for tree in trees[0:10]:
-        sub_trees.append(get_subtrees(json.loads(tree), 8, 3))
+    tree_agg_num = 10
+    for i in range(math.ceil(len(trees)/tree_agg_num)):
+        cur_idx = i * tree_agg_num
+        groups_node = []
+        groups_root = []
+        for tree in trees[cur_idx : cur_idx + tree_agg_num]:
+            sub_roots, sub_nodes = get_subtrees(json.loads(tree), 8, 3)
+            groups_node.append(sub_nodes)
+            groups_root.append(sub_roots)
 
-    # make node share
-    make_group_set(sub_trees, 0)
+        # make node share
+        feat_set, gid_set = make_group_set(groups_node, cur_idx)
+
+        # save
+        groups_root = [x[0] for x in groups_root]
+        convert_tree_agg(groups_root, feat_set, gid_set)
+
+
+
+
+
 
 
 if __name__ == '__main__':
