@@ -24,6 +24,8 @@ SET(CMAKE_CXX_FLAGS  "-xhost -O3 -fopenmp")
 # SET(CMAKE_C_FLAGS  "-fast  -fopenmp")
 # SET(CMAKE_CXX_FLAGS  "-fast  -fopenmp")
 
+set(CMAKE_PREFIX_PATH /workspace/xgboost/install/usr/local/)
+
 set(INCLUDE_DIR 
     "include",
     "common",
@@ -38,16 +40,10 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 add_library(cnpy SHARED "io/cnpy.cpp")
 target_link_libraries(cnpy ${ZLIB_LIBRARIES})
 
-find_package( TBB REQUIRED)
+find_package(TBB REQUIRED)
+find_package(XGBoost REQUIRED)
 
-
-
-# find_package(OpenMP)
-# if (OPENMP_FOUND)
-#     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
-#     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fopenmp")
-#     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-# endif()
+include_directories(${XGBoost_INCLUDE_DIRS})
 
 # exe
 add_executable( TEST_tree 
@@ -64,4 +60,5 @@ add_executable( TEST_tree
 target_link_libraries(TEST_tree 
 cnpy 
 TBB::tbb
-/opt/intel/oneapi/vtune/latest/sdk/lib64/libittnotify.a)
+/opt/intel/oneapi/vtune/latest/sdk/lib64/libittnotify.a
+${XGBoost_LIBRARIES})

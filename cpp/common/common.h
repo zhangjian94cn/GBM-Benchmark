@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <immintrin.h>
 
 #if defined(__INTEL_COMPILER)
     #define PRAGMA_IVDEP            _Pragma("ivdep")
@@ -42,9 +43,41 @@
     #define DAAL_TYPENAME typename
 #endif
 
+static const int gnodeNum = sizeof(__m512) / sizeof(int);
+
 struct Common {
     static const uint8_t lookup[256];
     static const int cycleNum;
+};
+
+// union FeatIdx {
+//     __m512i i;
+//     int32_t ii[gnodeNum];
+// };
+
+// union FeatVal {
+//     __m512  v;
+//     float vv[gnodeNum];
+// };
+
+// union nodeStat {
+//     __mmask16  m;
+//     uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
+// };
+
+union FeatIdxType {
+    __m512i i;
+    int32_t ii[gnodeNum];
+};
+
+union FeatValType {
+    __m512  v;
+    float vv[gnodeNum];
+};
+
+union nodeStatType {
+    __mmask16  m;
+    uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
 };
 
 
