@@ -94,7 +94,7 @@ void pred_core(
     // // exp5 memory affinity
     // static tbb::affinity_partitioner ap;
     // static tbb::static_partitioner sp;
-    // static tbb::simple_partitioner sp;
+    // static tbb::xgboost_partitioner sp;
     // static tbb::auto_partitioner ap;
 
     // tbb::parallel_for(0, nD, 1, [&](int i) {
@@ -210,11 +210,13 @@ void test1() {
 
 void test2() {
 
+    std::string modelPath = "/workspace/GBM-Benchmark/test.json";
+
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_128.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_4_16.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k.json";
-    std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_10_8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256.json";
@@ -224,7 +226,8 @@ void test2() {
     std::string dataPathY = "/workspace/GBM-Benchmark/data/higgs_intel/higgs1m_y_test.npy";
     
     GBTreeModel gbt = GBTreeModel();
-    LoadXGBoostJSONModel(modelPath.c_str(), gbt);
+    // LoadXGBoostJSONModel(modelPath.c_str(), gbt);
+    LoadTreeAggJSONModel(modelPath.c_str(), gbt);
 
     cnpy::NpyArray arrX = cnpy::npy_load(dataPathX);
     cnpy::NpyArray arrY = cnpy::npy_load(dataPathY);

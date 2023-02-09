@@ -1,8 +1,10 @@
+// #include <xgboost/c_api.h>
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/document.h"
 
 #include "frontend.h"
 #include "xgboost_json.h"
+
 
 void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
 
@@ -57,3 +59,8 @@ void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt) {
         }
     }
 }
+
+// void LoadXGBoostJSONModel_XGB(const char* filename, GBTreeModel& gbt) {
+//     BoosterHandle handle;
+//     XGBoostLoadModelFromJson("./model.json", &handle);
+// }

@@ -1,6 +1,5 @@
 
 #pragma once
-#include "group_tree.h"
 
 #include <string>
 #include <memory>
@@ -8,3 +7,5 @@
 #include <cstdint>
 
 void LoadXGBoostJSONModel(const char* filename, GBTreeModel& gbt);
+
+void LoadTreeAggJSONModel(const char* filename, GBTreeModel& gbt);

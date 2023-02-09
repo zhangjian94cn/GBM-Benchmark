@@ -16,28 +16,28 @@
 #include "common.h"
 #include "pred_transform.h"
 
-static const int gnodeNum = sizeof(__m512) / sizeof(int);
+// static const int gnodeNum = sizeof(__m512) / sizeof(int);
 static const int smpLen = 16;
 static const int gInnerDep = 4;
 
 #define prefetch(x) __builtin_prefetch(x)
 
-using SampleGroupT = __m512;
+// using SampleGroupT = __m512;
 
-union FeatIdxType {
-    __m512i i;
-    int32_t ii[gnodeNum];
-};
+// union FeatIdxType {
+//     __m512i i;
+//     int32_t ii[gnodeNum];
+// };
 
-union FeatValType {
-    __m512  v;
-    float vv[gnodeNum];
-};
+// union FeatValType {
+//     __m512  v;
+//     float vv[gnodeNum];
+// };
 
-union nodeStatType {
-    __mmask16  m;
-    uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
-};
+// union nodeStatType {
+//     __mmask16  m;
+//     uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
+// };
 
 // 
 class NodeGroup {
@@ -50,7 +50,7 @@ public:
             _fvalArr.vv[i] = 0.f;
         }
     }
-    NodeGroup(FeatIdx& _fia, FeatVal& _fiv, std::vector<int32_t>& _children) : 
+    NodeGroup(FeatIdxType& _fia, FeatValType& _fiv, std::vector<int32_t>& _children) : 
             _fidxArr(_fia), _fvalArr(_fiv), _children(_children) {}
 
     void setNodeData(int nIdx, float fVal, int fIdx) {
@@ -126,8 +126,8 @@ public:
         float volatile res = 0.f;
         nodeStat volatile s;
         // volatile unsigned short nodei = 0;
-        FeatIdx fidxArr, a;
-        FeatVal volatile smpValArr;
+        FeatIdxType fidxArr, a;
+        FeatValType volatile smpValArr;
         // _mm512_prefetch_i32gather_ps(_fidxArr.i, smpArr, 4, _MM_HINT_T2);
         auto start = std::chrono::system_clock::now();
         for (int i = 0; i < Common::cycleNum; ++ i){
@@ -164,7 +164,7 @@ private:
 
 
     inline void cmpFS(const float* smpArr, nodeStat& s) {
-        // FeatIdx a;
+        // FeatIdxType a;
         // __m512 smpVal;
         __m512 smpVal = _mm512_i32gather_ps(_fidxArr.i, smpArr, 4);
         s.m = _mm512_cmp_ps_mask(_fvalArr.v, smpVal, _CMP_LT_OS) << 1;
@@ -191,8 +191,8 @@ private:
     }
 
     // 
-    FeatIdx _fidxArr;
-    FeatVal _fvalArr;
+    FeatIdxType _fidxArr;
+    FeatValType _fvalArr;
     // store offset in tree
     std::vector<int32_t> _children; 
 };

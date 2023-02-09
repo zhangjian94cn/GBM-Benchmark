@@ -50,20 +50,20 @@ struct Common {
     static const int cycleNum;
 };
 
-// union FeatIdx {
+// union FeatIdxType {
 //     __m512i i;
 //     int32_t ii[gnodeNum];
 // };
 
-// union FeatVal {
+// union FeatValType {
 //     __m512  v;
 //     float vv[gnodeNum];
 // };
 
-// union nodeStat {
-//     __mmask16  m;
-//     uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
-// };
+union nodeStat {
+    __mmask16  m;
+    uint8_t mm[sizeof(__mmask16) / sizeof(uint8_t)];
+};
 
 union FeatIdxType {
     __m512i i;
