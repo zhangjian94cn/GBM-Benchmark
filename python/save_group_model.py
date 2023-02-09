@@ -1,4 +1,5 @@
 import json
+from collections import deque
 
 class Node:
     def __init__(self, feat_val, feat_idx, left=None, right=None):
@@ -14,14 +15,25 @@ class TreeAgg:
         self.idx = idx
 
 def binary_tree_to_dict(root):
-    if 'leaf' in root:
-        return {'leaf': root['leaf']}
+    
+    tree = {'weight': [], 'index': []}
+    queue = deque([root])
 
-    else:
-        return {'feat_val': root['split_condition'],
-                'feat_idx': int(root['split'][1:]),
-                'left':  binary_tree_to_dict(root['children'][0]),
-                'right': binary_tree_to_dict(root['children'][1])}
+    while queue:
+        node = queue.popleft()
+        if 'leaf' not in node.keys():
+            tree['weight'].append(node['split_condition'])
+            tree['index'].append( int(node['split'][1:]))
+
+            for child in node['children']:
+                queue.append(child)
+
+        else:
+            tree['weight'].append(node['leaf'])
+            tree['index'].append(0)
+        
+    return tree
+
 
 def tree_agg_to_dict(tree_agg):
     
