@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstdio>
 
-#include "group_tree.h"
+#include "group_tree_acc.h"
 #include "frontend.h"
 #include "cnpy.h"
 
@@ -54,12 +54,12 @@ void pred_core(
     const int featDim, 
     std::vector<float> &res) {
     
-    const int iblockD = 50, iblockT = 10;
+    const int iblockD = 10, iblockT = 10;
     const int nD = dataDim / iblockD;
     const int nT = treeDim / iblockT;
     
     // // exp1 openmp
-    // #pragma omp parallel for
+    // // #pragma omp parallel for
     // for (int i = 0; i < dataDim; ++ i) {
     //     res[i] = gbt.predictGBT(data + i * featDim);
     // }
@@ -166,7 +166,7 @@ void pred_core(
                     // res[(offsetD + kD) * treeDim + offsetT + kT] = \
                     //     gbt._trees[offsetT + kT].predictTree(data + offsetD * featDim);
                     res[offsetD + kD] += \
-                        gbt._trees[offsetT + kT].predictTree(data + (offsetD + kD) * featDim);
+                        gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
                 }
             }
         }
@@ -199,7 +199,7 @@ void test1() {
     // for (int i = 0; i < cycleNum; ++ i){
     //     res = gbt1.predictGBT(smpArr);
     // }
-    res = gbt1.testTime(smpArr);
+    // res = gbt1.testTime(smpArr);
     // auto end = std::chrono::system_clock::now(); 
 
     // std::cout << (end-start).count()/1000000.0 << "ms" << std::endl;

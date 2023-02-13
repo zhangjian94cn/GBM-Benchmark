@@ -42,6 +42,10 @@ class Group {
 public:
     Group() {
         _children.resize(16, 0);
+        for (int i = 0; i < 16; ++ i) {
+            _fidx.ii[i] = 0;
+            _fval.vv[i] = 0.f;
+        }
     }
     ~Group() {
 
@@ -195,6 +199,7 @@ public:
     inline float predict(const float* smp) {
         float res = 0;
         const int size = _treeAggs.size();
+        cache(smp);
         for (int i = 0; i < size; ++ i) {
             res += _treeAggs[i].predict(smp, _r);
         }
