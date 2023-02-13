@@ -40,6 +40,9 @@ private:
 // 
 class Group {
 public:
+    Group() {
+        _children.resize(16, 0);
+    }
     ~Group() {
 
     };
@@ -174,10 +177,10 @@ private:
 class TreeAgg {
 public:
 
-    TreeAgg(__m512 r, __m512i i):_r(r), _i(i) {}
+    TreeAgg( __m512i i):_i(i) {}
 
     void loadTree(
-        int tid, 
+        // int tid, 
         const std::vector<float>& weight, 
         const std::vector<int>& index) {
         
@@ -218,13 +221,17 @@ public:
     };
 
     void pushTreeAgg(
-        __m512  r, 
+        // __m512  r, 
         __m512i i, 
-        const std::vector<float>& weight, 
-        const std::vector<int>& index) {
+        const std::vector<std::vector<float>>& weight, 
+        const std::vector<std::vector<int>>& index) {
         ++ _treeAggNum;
         // _treeAggs.push_back(new Tree(_depth, weight, index));
-        _treeAggs.push_back(TreeAgg(r, i));
+        TreeAgg _treeAgg = TreeAgg(i);
+        for(int j = 0; j < 10; ++ j) {
+            _treeAgg.loadTree(weight[j], index[j]);
+        }
+        _treeAggs.push_back(_treeAgg);
     }
 
     float predictGBT(const float* smp) {
