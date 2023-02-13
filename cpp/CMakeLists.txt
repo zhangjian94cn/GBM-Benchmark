@@ -18,8 +18,8 @@ SET(CMAKE_CXX_COMPILER "icpc")
 # SET(CMAKE_C_FLAGS  "-xhost -fopenmp")
 # SET(CMAKE_CXX_FLAGS  "-xhost  -fopenmp")
 
-SET(CMAKE_C_FLAGS  "-xhost -O3 -fopenmp")
-SET(CMAKE_CXX_FLAGS  "-xhost -O3 -fopenmp")
+# SET(CMAKE_C_FLAGS  "-xhost -O3 -fopenmp")
+# SET(CMAKE_CXX_FLAGS  "-xhost -O3 -fopenmp")
 
 # SET(CMAKE_C_FLAGS  "-fast  -fopenmp")
 # SET(CMAKE_CXX_FLAGS  "-fast  -fopenmp")
@@ -50,8 +50,8 @@ add_executable( TEST_tree
     main.cpp 
     group_tree.cpp 
     common/common.cpp
-    frontend/simple/xgboost_json.cpp
-    frontend/simple/xgboost_json.h
+    frontend/treeagg/treeagg_json.cpp
+    frontend/treeagg/treeagg_json.h
     include/frontend.h
     include/group_tree.h
     common/common.h

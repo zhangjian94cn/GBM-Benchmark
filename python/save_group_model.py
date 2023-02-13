@@ -1,17 +1,10 @@
 import json
 from collections import deque
 
-class Node:
-    def __init__(self, feat_val, feat_idx, left=None, right=None):
-        self.feat_val = feat_val
-        self.feat_idx = feat_idx
-        self.left = left
-        self.right = right
-
 class TreeAgg:
     def __init__(self, roots, reg, idx):
         self.roots = roots
-        self.reg = [list(x) for x in reg]
+        self.reg = [[int(xi[1:]) for x in reg for xi in x]]
         self.idx = idx
 
 def binary_tree_to_dict(root):
