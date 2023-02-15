@@ -67,7 +67,9 @@ void LoadTreeAggJSONModel(const char* filename, GBTreeModel& gbt) {
                 // printf("tree %d : node number is %d \n", i, weight.Size());
                 for (rapidjson::SizeType i = 0; i < weight.Size(); i++) {
                     _weight.push_back(weight[i].GetFloat());
-                    _index.push_back(index[i].GetInt());
+                    int tmp = 0;
+                    if (index[i].GetInt() > 16) tmp = index[i].GetInt() - 15;
+                    _index.push_back(tmp);
                     // printf("weight[%d] = %f \n", i, weight[i].GetFloat());
                     // printf("indices[%d] = %d \n", i, index[i].GetInt());
                 }

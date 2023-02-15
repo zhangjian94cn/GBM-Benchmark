@@ -54,7 +54,7 @@ void pred_core(
     const int featDim, 
     std::vector<float> &res) {
     
-    const int iblockD = 10, iblockT = 10;
+    const int iblockD = 50, iblockT = 50;
     const int nD = dataDim / iblockD;
     const int nT = treeDim / iblockT;
     
@@ -165,8 +165,10 @@ void pred_core(
                     // res[(offsetD + kD) * 1000 + j] = gbt.predictGBT(data + offsetD * featDim);
                     // res[(offsetD + kD) * treeDim + offsetT + kT] = \
                     //     gbt._trees[offsetT + kT].predictTree(data + offsetD * featDim);
+                    float* cur_data = data + (offsetD + kD) * featDim;
+                    register const __m512 r = _mm512_i32gather_ps(gbt._treeAggs[offsetT + kT]._i, cur_data, 4);
                     res[offsetD + kD] += \
-                        gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
+                        gbt._treeAggs[offsetT + kT].predict(cur_data, r);
                 }
             }
         }

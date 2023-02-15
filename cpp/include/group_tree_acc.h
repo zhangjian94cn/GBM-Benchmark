@@ -81,7 +81,7 @@ public:
     * \brief calculate the next node group offset
     * \param data test data
     */
-    inline uint8_t next(const __m512& data) {
+    inline uint8_t next(const register  __m512& data) {
         nodeStat s;
         __m512 sval = _mm512_permutexvar_ps(_fidx.i, data);
         s.m = _mm512_cmp_ps_mask(_fval.v, sval, _CMP_LT_OS) << 1;
@@ -160,8 +160,9 @@ public:
     }
 
 
-    inline float predict(const float* s, const __m512& r) {
+    inline float predict(const float* s, const register __m512& r) {
         int8_t idx = 0;
+        // idx = _groups[idx].next(s);
         idx = _groups[idx].next(r);
         idx = _groups[idx].next(s);
         return _leaf[idx];
@@ -196,20 +197,23 @@ public:
         _r = _mm512_i32gather_ps(_i, smp, 4);
     }
 
-    inline float predict(const float* smp) {
+    inline float predict(const float* smp, const register __m512& r) {
         float res = 0;
         const int size = _treeAggs.size();
-        cache(smp);
+        // cache(smp);
+        // _r = _mm512_i32gather_ps(_i, smp, 4);
         for (int i = 0; i < size; ++ i) {
             res += _treeAggs[i].predict(smp, _r);
         }
         return res;
     };
 
+    __m512i _i;
+
 private:
     std::vector<Tree> _treeAggs;
     __m512  _r;
-    __m512i _i;
+    // __m512i _i;
 };
 
 
@@ -239,13 +243,13 @@ public:
         _treeAggs.push_back(_treeAgg);
     }
 
-    float predictGBT(const float* smp) {
-        float res = 0.f;
-        for(int i = 0; i < _treeAggNum; ++ i) {
-            res += _treeAggs[i].predict(smp);
-        }
-        return sigmoid(res);
-    }
+    // float predictGBT(const float* smp) {
+    //     float res = 0.f;
+    //     for(int i = 0; i < _treeAggNum; ++ i) {
+    //         res += _treeAggs[i].predict(smp);
+    //     }
+    //     return sigmoid(res);
+    // }
     
     std::vector<TreeAgg> _treeAggs;
 
