@@ -54,7 +54,7 @@ void pred_core(
     const int featDim, 
     std::vector<float> &res) {
     
-    const int iblockD = 10, iblockT = 10;
+    const int iblockD = 50, iblockT = 1;
     const int nD = dataDim / iblockD;
     const int nT = treeDim / iblockT;
     
