@@ -88,7 +88,7 @@ public:
         // 7 = 1 + 2 + 4
         return _fvalArr.vv[offset + 7];
     }
-    
+
     inline int32_t nextGroup(int32_t offset) {
         return _children[offset];
     }

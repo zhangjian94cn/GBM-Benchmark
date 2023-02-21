@@ -74,18 +74,20 @@ public:
         nodeStat s;
         __m512 sval = _mm512_i32gather_ps(_fidx.i, data, 4);
         s.m = _mm512_cmp_ps_mask(_fval.v, sval, _CMP_LT_OS) << 1;
-        uint8_t offset = Common::lookup[s.mm[0]];
+        uint8_t _offset = Common::lookup[s.mm[0]];
+        uint8_t offset = (((1 << _offset) & s.mm[1]) != 0) + _offset * 2;
         return _children[offset];
     }
     /*!
     * \brief calculate the next node group offset
     * \param data test data
     */
-    inline uint8_t next(const __m512& data) {
+    inline uint8_t next(const __m512& r, const float* data) {
         nodeStat s;
-        __m512 sval = _mm512_permutexvar_ps(_fidx.i, data);
+        __m512 sval = _mm512_permutexvar_ps(_fidx.i, r);
         s.m = _mm512_cmp_ps_mask(_fval.v, sval, _CMP_LT_OS) << 1;
-        uint8_t offset = Common::lookup[s.mm[0]];
+        uint8_t _offset = Common::lookup[s.mm[0]];
+        uint8_t offset = data[_fidx.ii[_offset + 7]] < _fval.vv[_offset + 7] ? _offset * 2 : _offset * 2 + 1;
         return _children[offset];
     }
 
@@ -162,7 +164,8 @@ public:
 
     inline float predict(const float* s, const __m512& r) {
         int8_t idx = 0;
-        idx = _groups[idx].next(r);
+        idx = _groups[idx].next(r, s);
+        // idx = _groups[idx].next(s);
         idx = _groups[idx].next(s);
         return _leaf[idx];
     }
@@ -199,7 +202,8 @@ public:
     inline float predict(const float* smp) {
         float res = 0;
         const int size = _treeAggs.size();
-        cache(smp);
+        // cache(smp);
+        __m512 _r = _mm512_i32gather_ps(_i, smp, 4);
         for (int i = 0; i < size; ++ i) {
             res += _treeAggs[i].predict(smp, _r);
         }
