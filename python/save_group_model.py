@@ -7,7 +7,7 @@ class TreeAgg:
         self.reg = [[int(xi[1:]) for x in reg for xi in x]]
         self.idx = idx
 
-def binary_tree_to_dict(root):
+def binary_tree_to_dict(root, reg):
     
     tree = {'weight': [], 'index': []}
     queue = deque([root])
@@ -16,7 +16,11 @@ def binary_tree_to_dict(root):
         node = queue.popleft()
         if 'leaf' not in node.keys():
             tree['weight'].append(node['split_condition'])
-            tree['index'].append( int(node['split'][1:]))
+            
+            if node['depth'] < 3:
+                tree['index'].append(reg[0].index(int(node['split'][1:])))
+            else:
+                tree['index'].append(int(node['split'][1:]))
 
             for child in node['children']:
                 queue.append(child)
@@ -36,7 +40,7 @@ def tree_agg_to_dict(tree_agg):
         'trees': []}
 
     for root in tree_agg.roots:
-        tree_agg_dict['trees'].append(binary_tree_to_dict(root))
+        tree_agg_dict['trees'].append(binary_tree_to_dict(root, list(tree_agg.reg)))
     
     return tree_agg_dict
 
