@@ -10,7 +10,7 @@
 #include <random>
 #include <chrono>
 #include <iostream>
-// 
+
 #include <tbb/tbb.h>
 
 #include "common.h"
@@ -84,11 +84,16 @@ public:
     */
     inline uint8_t next(const __m512& r, const float* data) {
         nodeStat s;
-        __m512 sval = _mm512_permutexvar_ps(_fidx.i, r);
+        const __mmask16 mask = 0b1111111;
+        __m512 sval = _mm512_maskz_permutexvar_ps(mask, _fidx.i, r);
+        // __m512 sval = _mm512_permutexvar_ps(_fidx.i, r);
+        // __m256 sval = _mm256_permutexvar_ps(_fidx.i, r)
         s.m = _mm512_cmp_ps_mask(_fval.v, sval, _CMP_LT_OS) << 1;
+        // uint8_t _offset = 0;
         uint8_t _offset = Common::lookup[s.mm[0]];
         uint8_t offset = data[_fidx.ii[_offset + 7]] < _fval.vv[_offset + 7] ? _offset * 2 : _offset * 2 + 1;
         return _children[offset];
+        // return offset;
     }
 
     void initChildren(int gDep, int gCol, bool leaf = false) {
@@ -97,7 +102,8 @@ public:
         if (leaf) gNumPre = 0;
         int iStart = gNumPre + gCol * gnodeNum;
         for (int i = iStart, iEnd = iStart + gnodeNum; i < iEnd; ++i) {
-            _children[i - iStart] = i;
+            _children[i - iStart] = static_cast<uint8_t>(i);
+            // _children[i - iStart] = static_cast<uint8_t>(i);
         }
     }
 
@@ -105,7 +111,7 @@ public:
 private:
     FeatIdxType _fidx;
     FeatValType _fval;
-    std::vector<int8_t> _children; 
+    std::vector<uint8_t> _children; 
 };
 
 class Tree {
@@ -158,12 +164,12 @@ public:
         for (int n = 0; n < (1 << _depthN); ++ n) {
             _leaf[n] = (weight[nIdx + n + 1]);
         }
-
+        
     }
 
 
     inline float predict(const float* s, const __m512& r) {
-        int8_t idx = 0;
+        uint8_t idx = 0;
         idx = _groups[idx].next(r, s);
         // idx = _groups[idx].next(s);
         idx = _groups[idx].next(s);
@@ -195,24 +201,24 @@ public:
 
     }
 
-    inline void cache(const float* smp) {
-        _r = _mm512_i32gather_ps(_i, smp, 4);
-    }
+    // inline void cache(const float* smp) {
+    //     _r = _mm512_i32gather_ps(_i, smp, 4);
+    // }
 
     inline float predict(const float* smp) {
         float res = 0;
         const int size = _treeAggs.size();
         // cache(smp);
-        __m512 _r = _mm512_i32gather_ps(_i, smp, 4);
+        register __m512 r = _mm512_i32gather_ps(_i, smp, 4);
         for (int i = 0; i < size; ++ i) {
-            res += _treeAggs[i].predict(smp, _r);
+            res += _treeAggs[i].predict(smp, r);
         }
         return res;
     };
 
 private:
     std::vector<Tree> _treeAggs;
-    __m512  _r;
+    // __m512  _r;
     __m512i _i;
 };
 
@@ -236,8 +242,9 @@ public:
         const std::vector<std::vector<int>>& index) {
         ++ _treeAggNum;
         // _treeAggs.push_back(new Tree(_depth, weight, index));
+        int aggSize = 1;
         TreeAgg _treeAgg = TreeAgg(i);
-        for(int j = 0; j < 10; ++ j) {
+        for(int j = 0; j < aggSize; ++ j) {
             _treeAgg.loadTree(weight[j], index[j]);
         }
         _treeAggs.push_back(_treeAgg);
