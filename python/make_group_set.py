@@ -8,7 +8,7 @@ import xgboost as xgb
 import math
 
 from analyse_tree import get_subtrees, make_group_set
-from save_group_model import convert_tree_agg
+from save_group_model import convert_tree_agg, save_tree_agg
 
 
 ROOT_PATH = Path(__file__).absolute()
@@ -44,7 +44,9 @@ def main():
 
     # 0. model training
     # model_path = "../xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json"
-    model_path = "../xgb-higgs-model-1_6_1-ntrees_1k.json"
+    # model_path = "../xgb-higgs-model-1_6_1-ntrees_1k.json"
+    # model_path = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep4_16.json"
+    model_path = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json"
 
     if os.path.exists(model_path):
         booster_native = load_model('xgb', model_path)
@@ -57,6 +59,7 @@ def main():
     
     # load sub_trees
     tree_agg_num = 10
+    tree_agg_list = []
     for i in range(math.ceil(len(trees)/tree_agg_num)):
         cur_idx = i * tree_agg_num
         groups_node = []
@@ -71,7 +74,10 @@ def main():
 
         # save
         groups_root = [x[0] for x in groups_root]
-        convert_tree_agg(groups_root, feat_set, gid_set)
+        tree_agg_dict = convert_tree_agg(groups_root, feat_set, gid_set)
+        tree_agg_list.append(tree_agg_dict)
+
+    save_tree_agg(tree_agg_list, 'test_full.json')
 
 
 
