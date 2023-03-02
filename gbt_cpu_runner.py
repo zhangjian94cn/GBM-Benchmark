@@ -130,6 +130,9 @@ def predict_baseline(args, model, data, backend):
             dmatrix = xgb.DMatrix(X_test, y_test)
             with Timer() as t_pred:
                 # dmatrix = xgb.DMatrix(X_test, y_test)
+                # for t in range(10):
+                #     prob_prediction = model.predict(dmatrix, iteration_range=(0, 10*t + 10))
+                    # prob_prediction = model.predict(dmatrix, iteration_range=(t*10 ,10 + 10*t))
                 prob_prediction = model.predict(dmatrix)
                 # class_prediction = np.where(prob_prediction >= 0.5, 1.0, 0.0)
             
@@ -223,7 +226,10 @@ def benchmark(args):
     # model_path = f"xgb-{args.dataset}-model.json"
     # model_path = "xgb-higgs-model-1_2_0.json"
     # model_path = "xgb-higgs-model-1_6_1.json"
-    model_path = "xgb-higgs-model-1_6_1-ntrees_1k.json"
+    # model_path = "xgb-higgs-model-1_6_1-ntrees_1k_dep3.json"
+    # model_path = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep4_16.json"
+    model_path = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1k_8_256full.json"
+    # model_path = "xgb-higgs-model-1_6_1-ntrees_1k.json"
     # model_path = "xgb-higgs-model-1_5_0-ntrees_1k.json"
     # model_path = "xgb-higgs-model-0_90.json"
 
@@ -242,7 +248,7 @@ def benchmark(args):
         print(f'xgb train time is : {t_train_sklearn}')
 
     # 1. xgboost as baseline
-    pred_res, t_pred_native = predict_baseline(args, booster_native, data, 'xgb')
+    pred_res, t_pred_native  = predict_baseline(args, booster_native, data, 'xgb')
     pred_res, t_pred_sklearn = predict_baseline(args, booster_sklearn, data, 'skl')
     print(f'xgb native API pred time is : {t_pred_native}')
     print(f'xgb sklearn API pred time is : {t_pred_sklearn}')
