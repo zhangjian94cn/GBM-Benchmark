@@ -52,5 +52,7 @@ def convert_tree_agg(groups_root, feat_set, gid_set):
 
     tree_agg = TreeAgg(groups_root, feat_set, gid_set)
     tree_agg_dict = tree_agg_to_dict(tree_agg)
-    save_tree_agg(tree_agg_dict, 'test.json')
+    # save_tree_agg(tree_agg_dict, 'test.json')
+
+    return tree_agg_dict
 
