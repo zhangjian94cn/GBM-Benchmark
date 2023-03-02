@@ -209,7 +209,7 @@ public:
         float res = 0;
         const int size = _treeAggs.size();
         // cache(smp);
-        register __m512 r = _mm512_i32gather_ps(_i, smp, 4);
+        __m512 r = _mm512_i32gather_ps(_i, smp, 4);
         for (int i = 0; i < size; ++ i) {
             res += _treeAggs[i].predict(smp, r);
         }
@@ -242,7 +242,8 @@ public:
         const std::vector<std::vector<int>>& index) {
         ++ _treeAggNum;
         // _treeAggs.push_back(new Tree(_depth, weight, index));
-        int aggSize = 1;
+        // int aggSize = 1;
+        int aggSize = 10;
         TreeAgg _treeAgg = TreeAgg(i);
         for(int j = 0; j < aggSize; ++ j) {
             _treeAgg.loadTree(weight[j], index[j]);
