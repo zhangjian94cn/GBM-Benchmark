@@ -28,11 +28,12 @@ void LoadTreeAggJSONModel(const char* filename, GBTreeModel& gbt) {
     ParsedModelInfo treeInfo;
     {
         treeInfo.tree_num = 10;
+        // treeInfo.tree_depth = 4;
         treeInfo.tree_depth = 8;
-        // treeInfo.tree_depth = 8;
+        treeInfo.agg_num = 10;
     }
 
-
+    
 
     for (int k = 0; k < 100; ++ k) {
         std::vector<std::vector<float>> _weightAgg;
@@ -40,11 +41,13 @@ void LoadTreeAggJSONModel(const char* filename, GBTreeModel& gbt) {
         // __m512  _reg;
         __m512i _idx; 
 
+        const rapidjson::Value& cur_agg = d.GetArray()[k];
+
         gbt.setTreeDepth(treeInfo.tree_depth);
         {
-            const rapidjson::Value& reg = d["reg"].GetArray()[0].GetArray();
+            const rapidjson::Value& reg = cur_agg["reg"].GetArray()[0].GetArray();
             // const rapidjson::Value& idx = d["idx"].GetArray()[0].GetArray();
-            const rapidjson::Value& trees = d["trees"].GetArray();
+            const rapidjson::Value& trees = cur_agg["trees"].GetArray();
             
             // float _r[16] = {}; 
             int   _i[16] = {};
@@ -55,7 +58,7 @@ void LoadTreeAggJSONModel(const char* filename, GBTreeModel& gbt) {
             }
             // _reg = _mm512_load_epi32(_r); 
             _idx = _mm512_load_epi32(_i);
-            for (int i = 0; i < 10; ++ i) {
+            for (int i = 0; i < treeInfo.agg_num; ++ i) {
                 const rapidjson::Value& weight = trees[i].GetObject()["weight"];
                 const rapidjson::Value& index  = trees[i].GetObject()["index"];
                 
