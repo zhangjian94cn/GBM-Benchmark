@@ -16,8 +16,8 @@
 #include "oneapi/tbb.h"
 #include <tbb/task_scheduler_observer.h>
 
-__itt_domain* domain = __itt_domain_create("predict");
-__itt_string_handle* handle_main = __itt_string_handle_create("test.zhangjian");
+// __itt_domain* domain = __itt_domain_create("predict");
+// __itt_string_handle* handle_main = __itt_string_handle_create("test.zhangjian");
 
 
 // class pinning_observer : public oneapi::tbb::task_scheduler_observer {
@@ -58,11 +58,13 @@ void pred_core(
     const int nD = dataDim / iblockD;
     const int nT = treeDim / iblockT;
     
+    std::vector<float> tmp(dataDim * nT);
+
     // // exp1 openmp
     // // #pragma omp parallel for
     // for (int i = 0; i < dataDim; ++ i) {
     //     res[i] = gbt.predictGBT(data + i * featDim);
-    // }
+    // }   
 
     // // exp2 blocked openmp
     // #pragma omp parallel for
@@ -156,17 +158,17 @@ void pred_core(
         
         for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
         for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
-        {   
+        {
             // printf("i is %d \n", i);
             // printf("j is %d \n", j);
             const int offsetD = i * iblockD, offsetT = j * iblockT;
             for (int kT = 0 ;kT < iblockT; ++ kT) {
                 for (int kD = 0 ;kD < iblockD; ++ kD) {
                     // res[(offsetD + kD) * 1000 + j] = gbt.predictGBT(data + offsetD * featDim);
-                    // res[(offsetD + kD) * treeDim + offsetT + kT] = \
-                    //     gbt._trees[offsetT + kT].predictTree(data + offsetD * featDim);
-                    res[offsetD + kD] += \
+                    tmp[(offsetD + kD) * nT + j] += \
                         gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
+                    // res[offsetD + kD] += \
+                    //     gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
                 }
             }
         }
@@ -174,9 +176,13 @@ void pred_core(
     }, ap);
 
     tbb::parallel_for(0, nD, 1, [&](int i) {
-        const int offset = i * iblockD;
+        const int offsetD = i * iblockD;
         for (int j = 0 ;j < iblockD; j++) {
-            res[offset + j] = sigmoid(res[offset + j]);
+            float dt = 0.f;
+            for (int k = 0; k < nT; ++ k) {
+                dt += tmp[(offsetD + j) * nT + k];
+            }
+            res[offsetD + j] = sigmoid(dt);
         }
     });
     // }, ap);
@@ -210,7 +216,9 @@ void test1() {
 
 void test2() {
 
-    std::string modelPath = "/workspace/GBM-Benchmark/test.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/test.json";
+    // std::string modelPath = "/workspace/GBM-Benchmark/test_10_8_256.json";
+    std::string modelPath = "/workspace/GBM-Benchmark/test_full.json";
 
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_256.json";
     // std::string modelPath = "/workspace/GBM-Benchmark/xgb-higgs-model-1_6_1-ntrees_1_dep8_128.json";
@@ -238,9 +246,10 @@ void test2() {
     int dataDim = arrX.shape[0];
     int treeDim = gbt.getTreeNum();
     std::vector<float> smpX(featDim * dataDim), smpY(featDim * dataDim);
-    // std::vector<float> res(dataDim);
-    // std::vector<float> res(dataDim * treeDim);
     std::vector<float> res(dataDim);
+    // std::vector<float> res(dataDim * treeDim);
+    
+    // std::vector<float> res(dataDim);
     for (int i = 0; i < featDim * dataDim; ++ i) {
         smpX[i] = loaded_dataX[i];
         // smpY[i] = loaded_dataY[i];
@@ -249,7 +258,8 @@ void test2() {
 
     auto start = std::chrono::system_clock::now();
     // __itt_task_begin(domain, __itt_null, __itt_null, handle_main);
-    for (int k = 0; k < 100; ++ k) {
+    //for (int k = 0; k < 100; ++ k) {
+    for (int k = 0; k < 1; ++ k) {
         pred_core(gbt, smpX.data(), dataDim, treeDim, featDim, res);
         // pred_core(gbt, smpX.data() + featDim * dataDim / 2, dataDim / 2, featDim, res);
     }
@@ -261,9 +271,10 @@ void test2() {
     
     // print result
     for (int i = 0; i < dataDim; ++ i) {
-        if (i % 400000 == 0) {
-            std::cout << res[i] << std::endl;
-        }
+        //if (i % 400000 == 0) {
+            //std::cout << res[i] << std::endl;
+            std::cout << i<<" "<<res[i] << std::endl;
+        //}
     }
 
 }
