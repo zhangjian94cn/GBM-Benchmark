@@ -52,13 +52,15 @@ void pred_core(
     const int dataDim, 
     const int treeDim, 
     const int featDim, 
-    std::vector<float> &res) {
+    std::vector<float> &res,
+    std::vector<float> &tmp
+    ) {
     
     const int iblockD = 50, iblockT = 1;
     const int nD = dataDim / iblockD;
     const int nT = treeDim / iblockT;
     
-    std::vector<float> tmp(dataDim * nT);
+    
 
     // // exp1 openmp
     // // #pragma omp parallel for
@@ -157,19 +159,25 @@ void pred_core(
         [&](const tbb::blocked_range2d<size_t>& r){
         
         for(size_t i = r.cols().begin(); i != r.cols().end(); i++)
-        for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
         {
-            // printf("i is %d \n", i);
-            // printf("j is %d \n", j);
-            const int offsetD = i * iblockD, offsetT = j * iblockT;
-            for (int kT = 0 ;kT < iblockT; ++ kT) {
-                for (int kD = 0 ;kD < iblockD; ++ kD) {
-                    // res[(offsetD + kD) * 1000 + j] = gbt.predictGBT(data + offsetD * featDim);
-                    tmp[(offsetD + kD) * nT + j] += \
-                        gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
-                    // res[offsetD + kD] += \
-                    //     gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
+            // std::vector<float> tmp(nT);
+            for(size_t j = r.rows().begin(); j != r.rows().end(); j++)
+            {
+                // printf("i is %d \n", i);
+                // printf("j is %d \n", j);
+                const int offsetD = i * iblockD, offsetT = j * iblockT;
+                for (int kT = 0 ;kT < iblockT; ++ kT) {
+                    for (int kD = 0 ;kD < iblockD; ++ kD) {
+                        // res[(offsetD + kD) * 1000 + j] = gbt.predictGBT(data + offsetD * featDim);
+                        // tmp[j] += \
+                        //     gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
+                        tmp[(offsetD + kD) * nT + j] += \
+                            gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
+                        // res[offsetD + kD] += \
+                        //     gbt._treeAggs[offsetT + kT].predict(data + (offsetD + kD) * featDim);
+                    }
                 }
+                // res[offsetD + kD] += tmp[j];
             }
         }
     // });
@@ -259,8 +267,10 @@ void test2() {
     auto start = std::chrono::system_clock::now();
     // __itt_task_begin(domain, __itt_null, __itt_null, handle_main);
     //for (int k = 0; k < 100; ++ k) {
-    for (int k = 0; k < 1; ++ k) {
-        pred_core(gbt, smpX.data(), dataDim, treeDim, featDim, res);
+    const int nT = treeDim / 1;
+    std::vector<float> tmp(dataDim * nT);
+    for (int k = 0; k < 100; ++ k) {
+        pred_core(gbt, smpX.data(), dataDim, treeDim, featDim, res, tmp);
         // pred_core(gbt, smpX.data() + featDim * dataDim / 2, dataDim / 2, featDim, res);
     }
     // pred_core(gbt, smpX.data(), dataDim, featDim, res);
@@ -271,10 +281,10 @@ void test2() {
     
     // print result
     for (int i = 0; i < dataDim; ++ i) {
-        //if (i % 400000 == 0) {
-            //std::cout << res[i] << std::endl;
-            std::cout << i<<" "<<res[i] << std::endl;
-        //}
+        if (i % 400000 == 0) {
+            std::cout << res[i] << std::endl;
+            // std::cout << i<<" "<<res[i] << std::endl;
+        }
     }
 
 }
